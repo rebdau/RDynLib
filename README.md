@@ -1,2 +1,2 @@
 # RDynLib
-Creating a spectral database generated from LC-MS/MS and LC-MSn experiments
+Creating and expanding an annotated spectral database generated from in house LC-MS/MS and LC-MSn experiments
