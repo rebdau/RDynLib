@@ -1,0 +1,28 @@
+GeneralizeSubgroupXCMS<-function(XCMS){
+	CON.col<-dim(XCMS)[2]-1
+	SUBGRP.col<-dim(XCMS)[2]
+	o<-order(XCMS[,CON.col],XCMS[,SUBGRP.col])
+	XCMS<-XCMS[o,]
+	CON<-XCMS[,CON.col]
+	SUBGRP<-XCMS[,SUBGRP.col]
+	tim<-length(CON)-1
+	CON.new<-c(2,rep(NA,tim))
+	a=2
+	i=2
+	while(i<=length(CON)){
+	 if(CON[i]==CON[i-1]){
+	  if(SUBGRP[i]==SUBGRP[i-1]){
+	   CON.new[i]<-a
+	  }else{
+	   a=a+1
+	   CON.new[i]<-a
+	  }
+	 }else{
+	  a=a+1
+	  CON.new[i]<-a
+	 }
+	 i=i+1
+	}
+	XCMS<-data.frame(XCMS,CON.new)
+	return(XCMS)
+}
