@@ -18,6 +18,23 @@ First we load the "sim_functions.R" file that contains functions for similarity 
 source("C:/Users/amentag/Desktop/these/These/similarity/sim_functions.R")
 ```
 
+Test:
+
+```{r}
+x <- matrix(c(250, 100), ncol = 2, byrow = TRUE)  # 300 - 250 = 50
+y <- matrix(c(250, 120), ncol = 2, byrow = TRUE)  # 300 - 250 = 50
+
+# Test
+map <- dynlib_map(x, y, xPrecursorMz = 300, yPrecursorMz = 300)
+print(map)
+
+final_sim(map$x, map$y)
+```
+
+
+
+
+
 Next we load the "Dynlib_FTMS_neg.sqlite" database into a spectra object 
 ```{r}
 
@@ -36,15 +53,69 @@ ft_neg <- ftms_one_tree
 spectraData(ft_neg)
 ```
 
+
+```{r}
+result <- final_sim(ft_neg, dy_sps, threshold = 0.8)
+write.csv(result, file = "C:/Users/amentag/Desktop/these/These/clones/RDynlib/data/match_results.csv", 
+          row.names = FALSE)
+
+print(result)
+
+```
+
+
+
+
+
+Test :
 ```{r}
 
 
-results <- compare_with_metaboannotation(ft_neg, dy_sps, threshold = 0.8)
 
-
-head(results)
 
 
 ```
 
+
+```{r}
+'''
+library(Spectra)
+library(S4Vectors)
+library(MetaboAnnotation)
+
+# Spectre 1
+spectra_data1 <- DataFrame(
+  msLevel = 2L,
+  polarity = 1L,
+  id = "query1",
+  name = "ExampleQuery",
+  precursorMz = 300,
+  mz = list(c(100, 150, 200)),
+  intensity = list(c(10, 100, 50))
+)
+sps1 <- Spectra(spectra_data1)
+
+# Spectre 2
+spectra_data2 <- DataFrame(
+  msLevel = 2L,
+  polarity = 1L,
+  id = "target1",
+  name = "ExampleTarget",
+  precursorMz = 300,
+  mz = list(c(100, 150, 210)),  # Note que 100 et 150 sont communs avec sps1
+  intensity = list(c(5, 110, 40))
+)
+sps2 <- Spectra(spectra_data2)
+
+
+result <- compare_with_metaboannotation(sps1, sps2, threshold = 0.8)
+print(result)
+
+
+write.csv(result, file = "C:/Users/amentag/Desktop/these/These/clones/RDynlib/data/match_results.csv", 
+          row.names = FALSE)
+          
+'''
+
+```
 
