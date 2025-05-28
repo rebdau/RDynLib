@@ -347,7 +347,7 @@ We will need to add these if not already present. In addition, we set the
 
 ```{r}
 #' Define the polarity for the present data: 0 for negative, 1 for positive.
-pol <- 1L
+pol <- 0L
 proj <- "FTMS_pos"
 
 #' Define the spectrum_id for this MS level:
