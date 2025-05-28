@@ -2,9 +2,9 @@ library(Spectra)
 
 
 # Load required data
-filtered_db <- readRDS("D:/These/Ahlam/XCMS/flaxseed/S_all2/filtered_db_neg.rds")
-selected_trees_neg <- readRDS("D:/These/Ahlam/XCMS/flaxseed/S_all2/selected_trees_neg.rds")
-dynlib_version <- readRDS("D:/These/Ahlam/XCMS/flaxseed/S_all2/FTMS_QTOF.rds")
+filtered_db <- readRDS("C:/Users/amentag/Desktop/these/These/Ahlam/XCMS/flaxseed/S_all2/filtered_db_neg.rds")
+selected_trees_neg <- readRDS("C:/Users/amentag/Desktop/these/These/Ahlam/XCMS/flaxseed/S_all2/selected_trees_neg.rds")
+dynlib_version <- readRDS("C:/Users/amentag/Desktop/these/These/Ahlam/XCMS/flaxseed/S_all2/FTMS_QTOF.rds")
 
 # Créer la nouvelle colonne CE_ramp en fonction de la valeur de collisionEnergy
 dynlib_version$CE_ramp <- ifelse(dynlib_version$collisionEnergy == "ramp", TRUE, FALSE)
@@ -289,7 +289,7 @@ compare_and_add_spectra_all_levels <- function(st_sps, filtered_dy_sps, threshol
   
   filtered_dy_sps_ms <- filtered_dy_sps_ms[valid_names]
   
-
+  
   if (length(st_sps) > 0 && length(filtered_dy_sps_ms) > 0) {
     similarity_matrix <- compareSpectra(
       st_sps,
@@ -370,37 +370,65 @@ compare_and_add_spectra_all_levels <- function(st_sps, filtered_dy_sps, threshol
   }
   
   spectraData(st_sps) <- metadata
-  combined_spectra <- c(st_sps, filtered_dy_sps)
+  expid_filtered <- spectraData(filtered_dy_sps)$ExpID
+  expid_st <- spectraData(st_sps)$ExpID
+  
+  max_expid_filtered <- suppressWarnings(max(as.numeric(expid_filtered), na.rm = TRUE))
+  if (is.infinite(max_expid_filtered)) max_expid_filtered <- 0
+  
+  unique_old_ids <- unique(expid_st)
+  offset_ids <- seq_along(unique_old_ids) + max_expid_filtered
+  id_mapping <- setNames(offset_ids, unique_old_ids)
+  
+  new_expid_st <- as.character(id_mapping[as.character(expid_st)])
+  spectraData(st_sps)$ExpID <- new_expid_st
+  
+ 
+  combined_spectra <- c(filtered_dy_sps, st_sps)
   
   return(combined_spectra)
+
 }
 
-# Début du suivi du temps d'exécution
-start_time <- Sys.time()
 
-# Compare and add the spectra pour tous les niveaux MS
+
 results_all_levels <- compare_and_add_spectra_all_levels(st_sps, dy_sps, threshold = 0.8)
 
-# Fin du suivi du temps d'exécution
-end_time <- Sys.time()
 
-# Calcul du temps d'exécution
-execution_time <- end_time - start_time
 
-# Affichage du temps d'exécution
-cat("Temps d'exécution total pour tous les niveaux MS : ", execution_time, "\n")
 
-# Enregistrer l'objet results dans un fichier .RData
-saveRDS(results_all_levels, file = "D:/These/Ahlam/XCMS/flaxseed/S_all2/similarity_all_levels.rds")
+saveRDS(results_all_levels, file = "C:/Users/amentag/Desktop/these/These/Ahlam/XCMS/flaxseed/S_all2/similarity_all_levels_adjusted.rds")
 
-sim <- readRDS("D:/These/Ahlam/XCMS/flaxseed/S_all2/similarity_all_levels.rds")
-spectraData(sim)
-bm<-sim[!is.na(sim$best_match), ]
+adj <- readRDS("C:/Users/amentag/Desktop/these/These/Ahlam/XCMS/flaxseed/S_all2/similarity_all_levels_adjusted.rds")
+spectraData(adj)
+bm<-adj[!is.na(adj$best_match), ]
 print(bm$best_match)
 
-cat("Number of matches found:", sum(!is.na(sim$best_match)), "\n")
+cat("Number of matches found:", sum(!is.na(adj$best_match)), "\n")
+
+#rounding scores
+# Fonction pour arrondir les scores dans les chaînes best_match
+arrondir_scores <- function(x) {
+  # Split par "!" sans espace, puis nettoyer les espaces autour
+  parts <- trimws(unlist(strsplit(x, "!")))
+  parts <- parts[parts != ""]  # Retirer les éléments vides
+  
+  if (length(parts) >= 3) {
+    score <- as.numeric(parts[2])
+    parts[2] <- sprintf("%.3f", round(score, 3))
+    return(paste("!", paste(parts, collapse = " ! "), sep = " "))
+  } else {
+    return(x)
+  }
+}
 
 
+
+# Appliquer à tous les best_match dans l'objet adj
+adj$best_match <- sapply(adj$best_match, arrondir_scores)
+
+
+#adjusting Expnum where we have best match we increment
 
 
 
@@ -436,3 +464,40 @@ for (i in 1:length(mz_values)) {
 
 head(combined_data)
 
+
+
+
+
+
+
+
+n_existing <- length(dy_sps)
+n_new <- length(st_sps)
+combined_metadata <- spectraData(sim)
+
+
+n_existing <- length(dy_sps)
+n_new <- length(st_sps)
+
+
+combined_metadata$ExpID <- NA_integer_
+combined_metadata$ExpID[1:n_existing] <- 1:n_existing
+
+combined_metadata$ExpID[(n_existing + 1):(n_existing + n_new)] <- (n_existing + 1):(n_existing + n_new)
+
+spectraData(sim) <- combined_metadata
+
+
+
+
+
+
+
+
+
+sim <- readRDS("C:/Users/amentag/Desktop/these/These/Ahlam/XCMS/flaxseed/S_all2/similarity_all_levels.rds")
+spectraData(sim)
+bm<-sim[!is.na(sim$best_match), ]
+print(bm$best_match)
+
+cat("Number of matches found:", sum(!is.na(sim$best_match)), "\n")
