@@ -1,0 +1,50 @@
+---
+title: "Untitled"
+format: html
+server: shiny
+---
+
+In this quarto document we call the "sim_functions.R" file code to use functions for similarity calculation between FTMS data and the RDynLib FTMS database.
+
+
+```{r}
+library(Spectra)
+library(CompoundDb)
+```
+
+
+First we load the "sim_functions.R" file that contains functions for similarity calculation
+```{r}
+source("C:/Users/amentag/Desktop/these/These/similarity/sim_functions.R")
+```
+
+Next we load the "Dynlib_FTMS_neg.sqlite" database into a spectra object 
+```{r}
+
+dbf <- file.path("C:/Users/amentag/Desktop/these/These/clones/RDynlib/data", "DyLib_FTMS_neg.sqlite")
+
+#' Load the database as a `CompDb` object
+cdb <- CompDb(dbf)
+dy_sps <- Spectra(cdb)
+dy_sps
+```
+
+Here we load the FTMS of flax seed database (it's already a spectra object)  
+```{r}
+load("C:/Users/amentag/Desktop/Rcodes/RDynLib_ftms/data/ftms_one_tree.RData")
+ft_neg <- ftms_one_tree
+spectraData(ft_neg)
+```
+
+```{r}
+
+
+results <- compare_with_metaboannotation(ft_neg, dy_sps, threshold = 0.8)
+
+
+head(results)
+
+
+```
+
+
