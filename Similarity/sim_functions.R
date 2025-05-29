@@ -1,8 +1,8 @@
 library(Spectra)
-library(dplyr)
-library(S4Vectors)
-library(IRanges)
-library(tidyverse)
+#library(dplyr)
+#library(S4Vectors)
+#library(IRanges)
+#library(tidyverse)
 
 neutral_loss <- function(mz_values, precursorMz) {
   round(precursorMz - mz_values)
@@ -15,8 +15,9 @@ round_perl <- function(number) {
 remove_duplicates <- function(mz, intensity) {
   mz <- round_perl(mz)
   unique_mz <- unique(mz)
-  max_intensity <- sapply(unique_mz, function(m) max(intensity[mz == m], na.rm = TRUE))
-  return(list(mz = unique_mz, intensity = max_intensity))
+  list(mz = unique_mz,
+       intensity = vapply(unique_mz, function(m) max(intensity[mz == m],
+                                                     na.rm = TRUE), NA_real_))
 }
 
 #' @description
@@ -40,37 +41,34 @@ remove_duplicates <- function(mz, intensity) {
 #' @param m
 #'
 #' @author Ahlam Mentag
-<<<<<<< HEAD
 symmetric_dotproduct_combined <- function(x, y, n = 3, m = 0.6, ...) {
   if (!nrow(x) || !nrow(y))
     return(list(common_peaks = 0, similarity_score = 0))
-  
+
   mz1 <- x[, 1L]
   intensity1 <- x[, 2L]
   mz2 <- y[, 1L]
   intensity2 <- y[, 2L]
-  
+
   intensity1 <- (intensity1^n) * (mz1^m)
   intensity2 <- (intensity2^n) * (mz2^m)
-  
+
   denom1 <- sum(intensity1^2)
   denom2 <- sum(intensity2^2)
-  
+
   common_mz <- intersect(mz1, mz2)
-  
+
   nom <- 0
   if (length(common_mz) > 0) {
     idx1 <- match(common_mz, mz1)
     idx2 <- match(common_mz, mz2)
     nom <- sum(intensity1[idx1] * intensity2[idx2])
   }
-  
+
   similarity <- if (nom > 0) (nom^2) / (denom1 * denom2) else 0
-  
+
   return(list(common_peaks = length(common_mz), similarity_score = similarity))
 }
-
-
 
 #' @description
 #'
@@ -86,205 +84,62 @@ dynlib_map <- function(x, y, xPrecursorMz, yPrecursorMz, ...) {
   if (!nrow(x) || !nrow(y))
     return(list(x = matrix(numeric(), ncol = 2, nrow = 0),
                 y = matrix(numeric(), ncol = 2, nrow = 0)))
-  
+
   cleaned1 <- remove_duplicates(x[, 1L], x[, 2L])
   cleaned2 <- remove_duplicates(y[, 1L], y[, 2L])
-  
-=======
-symmetric_dotproduct_combined <- function(x, y, xPrecursorMz,
-                                          yPrecursorMz, n = 3, m = 0.6, ...) {
-  if (!nrow(x) || !nrow(y))
-    return(list(common_peaks = 0, similarity_score = 0))
 
-  cleaned1 <- remove_duplicates(x[, 1L], x[, 2L])
-  cleaned2 <- remove_duplicates(z[, 1L], y[, 2L])
-
->>>>>>> origin/dev_Ahlam
   mz1 <- cleaned1$mz
   intensity1 <- cleaned1$intensity
   mz2 <- cleaned2$mz
   intensity2 <- cleaned2$intensity
-<<<<<<< HEAD
-  
+
   # Matching exact m/z
   common_mz <- intersect(mz1, mz2)
-  matched1 <- cbind(mz1[mz1 %in% common_mz], intensity1[mz1 %in% common_mz])
-  matched2 <- cbind(mz2[mz2 %in% common_mz], intensity2[mz2 %in% common_mz])
-  
-  # Remaining peaks
-  remaining_idx1 <- !(mz1 %in% common_mz)
-  remaining_idx2 <- !(mz2 %in% common_mz)
-  
-  nl1 <- neutral_loss(mz1[remaining_idx1], xPrecursorMz)
-  nl2 <- neutral_loss(mz2[remaining_idx2], yPrecursorMz)
-  common_nl <- intersect(nl1, nl2)
-  
-  for (nl in common_nl) {
-    idx_nl1 <- which(nl1 == nl)
-    idx_nl2 <- which(nl2 == nl)
-    
-    matched_nl1 <- cbind(mz1[remaining_idx1][idx_nl1],
-                         intensity1[remaining_idx1][idx_nl1])
-    matched_nl2 <- cbind(mz2[remaining_idx2][idx_nl2],
-                         intensity2[remaining_idx2][idx_nl2])
-    
-    matched1 <- rbind(matched1, matched_nl1)
-    matched2 <- rbind(matched2, matched_nl2)
-  }
-  
-  return(list(x = matched1, y = matched2))
-=======
+  keep_mz1 <- mz1 %in% common_mz
+  keep_mz2 <- mz2 %in% common_mz
+  matched1 <- cbind(mz = mz1[keep_mz1], intensity = intensity1[keep_mz1])
+  matched2 <- cbind(mz = mz2[keep_mz2], intensity = intensity2[keep_mz2])
 
-  intensity1 <- (intensity1^n) * (mz1^m)
-  intensity2 <- (intensity2^n) * (mz2^m)
-
-  Fd_denom1 <- sum(intensity1^2)
-  Fd_denom2 <- sum(intensity2^2)
-
-  common_mz <- intersect(mz1, mz2)
-  Fd_nom <- 0
-  remaining_idx1 <- rep(TRUE, length(mz1))
-  remaining_idx2 <- rep(TRUE, length(mz2))
-
-  if (length(common_mz) > 0) {
-    idx1 <- match(common_mz, mz1)
-    idx2 <- match(common_mz, mz2)
-
-    valid_indices <- !is.na(idx1) & !is.na(idx2)
-    idx1 <- idx1[valid_indices]
-    idx2 <- idx2[valid_indices]
-
-    if (length(idx1) > 0 && length(idx2) > 0) {
-      Fd_nom <- sum(intensity1[idx1] * intensity2[idx2])
-    }
-
-    remaining_idx1[idx1] <- FALSE
-    remaining_idx2[idx2] <- FALSE
-  }
-
-  # Calcul des neutral losses sur les pics restants
-  nl1 <- neutral_loss(mz1[remaining_idx1], xPrecursorMz)
-  nl2 <- neutral_loss(mz2[remaining_idx2], yPrecursorMz)
-
-  common_nl <- intersect(nl1, nl2)
-
-  if (length(common_nl) > 0) {
-    for (nl in common_nl) {
-      matches1 <- which(nl1 == nl)
-      matches2 <- which(nl2 == nl)
-
-      if (length(matches1) > 0 && length(matches2) > 0) {
-        Fd_nom <- Fd_nom + sum(intensity1[remaining_idx1][matches1]) *
-          sum(intensity2[remaining_idx2][matches2])
+  ## Process the remaining peaks to see if they could match as neutral losses
+  remaining_mz1 <- !keep_mz1
+  remaining_mz2 <- !keep_mz2
+  if (any(remaining_mz1) && any(remaining_mz2)) {
+      nl1 <- neutral_loss(mz1[remaining_mz1], xPrecursorMz)
+      nl2 <- neutral_loss(mz2[remaining_mz2], yPrecursorMz)
+      common_nl <- intersect(nl1, nl2)
+      if (length(common_nl)) {
+          keep_mz1 <- nl1 %in% common_nl
+          keep_mz2 <- nl2 %in% common_nl
+          matched_nl1 <- cbind(mz = mz1[remaining_mz1][keep_mz1],
+                               intensity = intensity1[remaining_mz1][keep_mz1])
+          matched_nl2 <- cbind(mz = mz2[remaining_mz2][keep_mz2],
+                               intensity = intensity2[remaining_mz2][keep_mz2])
+          matched1 <- rbind(matched1, matched_nl1)
+          matched2 <- rbind(matched2, matched_nl2)
       }
-    }
   }
-
-  FD <- if (Fd_nom > 0) (Fd_nom^2) / (Fd_denom1 * Fd_denom2) else 0
-
-  total_common <- length(common_mz) + length(common_nl)
-
-  return(FD)
->>>>>>> origin/dev_Ahlam
+  return(list(x = matched1, y = matched2))
 }
 
 
-#' @description
-#'
-#' Matches/maps peaks between the two provided peak matrices.
-#'
-#' @return
-#'
-#' a `list` with `numeric` matrices containing only the matched peaks between
-#' the two input spectra.
-#'
-#' @author Ahlam Mentag
-dynlib_map <- function(x, y, xPrecursorMz, yPrecursorMz, ...) {
-    if (!nrow(x) || !nrow(y))
-        return(list(x = matrix(numeric(), ncol = 3, nrow = 0),
-                    y = matrix(numeric(), ncol = 3, nrow = 0)))
-
-    cleaned1 <- remove_duplicates(x[, 1L], x[, 2L])
-    cleaned2 <- remove_duplicates(z[, 1L], y[, 2L])
-
-<<<<<<< HEAD
 dynlib_fun <- function(x, y, ...) {
-  
+
   peaks_x <- peaks(x)
   peaks_y <- peaks(y)
-  
+
 
   precursor_x <- precursorMz(x)
   precursor_y <- precursorMz(y)
-  
+
 
   matched <- dynlib_map(peaks_x, peaks_y, precursor_x, precursor_y)
-  
- 
+
+
   result <- symmetric_dotproduct_combined(matched$x, matched$y)
-  
- 
+
+
   return(result$similarity_score)
 }
-
-
-=======
-    mz1 <- cleaned1$mz
-    mz2 <- cleaned2$mz
-    ## Continue from here - keep only the rows in `cleaned1` or `cleaned2` that
-    ## have matching m/z between the two.
-    common_mz <- intersect(mz1, mz2)
-    remaining_idx1 <- rep(TRUE, length(mz1))
-    remaining_idx2 <- rep(TRUE, length(mz2))
-
-  if (length(common_mz) > 0) {
-    idx1 <- match(common_mz, mz1)
-    idx2 <- match(common_mz, mz2)
-
-    valid_indices <- !is.na(idx1) & !is.na(idx2)
-    idx1 <- idx1[valid_indices]
-    idx2 <- idx2[valid_indices]
-
-    if (length(idx1) > 0 && length(idx2) > 0) {
-      Fd_nom <- sum(intensity1[idx1] * intensity2[idx2])
-    }
-
-    remaining_idx1[idx1] <- FALSE
-    remaining_idx2[idx2] <- FALSE
-  }
-
-  # Calcul des neutral losses sur les pics restants
-  nl1 <- neutral_loss(mz1[remaining_idx1], xPrecursorMz)
-  nl2 <- neutral_loss(mz2[remaining_idx2], yPrecursorMz)
-
-  common_nl <- intersect(nl1, nl2)
-
-  if (length(common_nl) > 0) {
-    for (nl in common_nl) {
-      matches1 <- which(nl1 == nl)
-      matches2 <- which(nl2 == nl)
-
-      if (length(matches1) > 0 && length(matches2) > 0) {
-        Fd_nom <- Fd_nom + sum(intensity1[remaining_idx1][matches1]) *
-          sum(intensity2[remaining_idx2][matches2])
-      }
-    }
-  }
-
-  FD <- if (Fd_nom > 0) (Fd_nom^2) / (Fd_denom1 * Fd_denom2) else 0
-
-  total_common <- length(common_mz) + length(common_nl)
-
-  return(FD)
-
-}
-
-dynlib_fun <- function() {
-}
->>>>>>> origin/dev_Ahlam
-
-
-
 
 count_common_peaks <- function(x, y, xPrecursorMz, yPrecursorMz, ...) {
   # Extract m/z and intensity values from the spectra
@@ -360,16 +215,8 @@ final_sim <- function(st_sps, filtered_dy_sps, threshold = 0.8, ppm = 5, toleran
     target = filtered_dy_sps,
     param = param
   )
-<<<<<<< HEAD
-  
   df <- matchedData(matches)
   df <- df[!is.na(df$score) & df$score >= threshold, ]
-  
-=======
 
-  df <- as.data.frame(matches)
-  df <- df[df$score >= threshold, ]
-
->>>>>>> origin/dev_Ahlam
   return(df)
 }
