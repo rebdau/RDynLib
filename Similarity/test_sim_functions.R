@@ -1,5 +1,5 @@
 library(testthat)
-source("sim_functions.R")
+source("C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/sim_functions.R")
 
 a <- cbind(mz = c(13.3, 15.4, 15.6, 23.4, 26.2),
            intensity = 1:5)
@@ -55,3 +55,42 @@ test_that("dynlib_map works", {
     expect_equal(res$x, cbind(mz = c(13, 26), intensity = c(1, 5)))
     expect_equal(res$y, cbind(mz = c(33, 46), intensity = c(1, 2)))
 })
+
+
+
+
+test_that("similarity score works", {
+  x <- cbind(mz = c(15,17),
+             intensity = c(2, 19))
+  y <- cbind(mz = c(15, 17),
+             intensity = c(2, 19))
+  
+  res <- symmetric_dotproduct_combined(x, y)
+  expect_true(is.list(res))
+  expect_equal(names(res), c("common_peaks", "similarity_score"))
+  expect_equal(res$common_peaks, 2)
+  expect_equal(res$similarity_score, 1)
+  
+  x <- cbind(mz = c(10, 17, 5, 9),
+             intensity = c(2, 19, 6, 5))
+  y <- cbind(mz = c(10, 17, 5, 9),
+             intensity = c(2, 19, 7, 8))
+  res <- symmetric_dotproduct_combined(x, y)
+  expect_true(is.list(res))
+  expect_equal(names(res), c("common_peaks", "similarity_score"))
+  expect_equal(res$common_peaks, 4)
+  expect_equal(res$similarity_score, 0.9984423)
+  
+  
+  x <- cbind(mz = c(10, 17, 5, 9),
+             intensity = c(8, 9, 6, 5))
+  y <- cbind(mz = c(10, 17, 5, 9),
+             intensity = c(2, 19, 7, 8))
+  res <- symmetric_dotproduct_combined(x, y)
+  expect_true(is.list(res))
+  expect_equal(names(res), c("common_peaks", "similarity_score"))
+  expect_equal(res$common_peaks, 4)
+  expect_equal(res$similarity_score, 0.7850193)
+  
+})
+
