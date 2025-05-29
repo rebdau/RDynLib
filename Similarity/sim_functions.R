@@ -22,28 +22,30 @@ remove_duplicates <- function(mz, intensity) {
 
 #' @description
 #'
-#' Function to calculate the symmetric dot product between two spectra. The
-#' function also:
+#' Function to calculate the symmetric dot product between two spectra. As
+#' input **matched** peak matrices are expected, such as those returned by
+#' `dynlib_map()`. These input matrices are expected to have the same number
+#' of rows, with the same row in both matrices `x` and `y` representing a
+#' matching peak. The matrices can also contain neutral loss peaks. Importantly
+#' each matrix has to also contain the m/z-weighted intensity sum as an
+#' *attribute* to the matrix (i.e. `attributes(x)$wintensity_sum)`).
 #'
-#' - *cleans* the spectra keeping only a single fragment peak for groups of
-#'   peaks with a m/z smaller 0.5
+#' @param x `numeric` 2-column `matrix` with the m/z and intensity values of
+#'     **matched** peaks.
 #'
-#' @param x `numeric` 2-column `matrix` with the m/z and intensity values
-#'
-#' @param y `numeric` 2-column `matrix` with the m/z and intensity values
-#'
-#' @param xPrecursorMz `numeric(1)` with the precursor m/z of the spectrum `x`
-#'
-#' @param yPrecursorMz `numeric(1)` with the precursor m/z of the spectrum `y`
+#' @param y `numeric` 2-column `matrix` with the m/z and intensity values of
+#'     **matched** peaks.
 #'
 #' @param n
 #'
 #' @param m
 #'
+#' @return a `numeric(1)` with the similarity between the matched peaks.
+#'
 #' @author Ahlam Mentag
-symmetric_dotproduct_combined <- function(x, y, n = 3, m = 0.6, ...) {
+dynlib_symmetric_dotproduct <- function(x, y, n = 3, m = 0.6, ...) {
   if (!nrow(x) || !nrow(y))
-    return(list(common_peaks = 0, similarity_score = 0))
+    return(0.0)
 
   mz1 <- x[, 1L]
   intensity1 <- x[, 2L]
@@ -53,21 +55,8 @@ symmetric_dotproduct_combined <- function(x, y, n = 3, m = 0.6, ...) {
   intensity1 <- (intensity1^n) * (mz1^m)
   intensity2 <- (intensity2^n) * (mz2^m)
 
-  denom1 <- sum(intensity1^2)
-  denom2 <- sum(intensity2^2)
-
-  common_mz <- intersect(mz1, mz2)
-
-  nom <- 0
-  if (length(common_mz) > 0) {
-    idx1 <- match(common_mz, mz1)
-    idx2 <- match(common_mz, mz2)
-    nom <- sum(intensity1[idx1] * intensity2[idx2])
-  }
-
-  similarity <- if (nom > 0) (nom^2) / (denom1 * denom2) else 0
-
-  return(list(common_peaks = length(common_mz), similarity_score = similarity))
+  sum(intensity1 * intensity2)^2 /
+      (attributes(x)$wintensity_sum * attributes(y)$wintensity_sum)
 }
 
 #' @description
@@ -77,10 +66,11 @@ symmetric_dotproduct_combined <- function(x, y, n = 3, m = 0.6, ...) {
 #' @return
 #'
 #' a list with numeric matrices containing only the matched peaks between
-#' the two input spectra.
+#' the two input spectra. The m/z weighted intensity sum of each (cleaned) peak
+#' matrix is returned as an attribute `"wintensity_sum"` to each table.
 #'
 #' @author Ahlam Mentag
-dynlib_map <- function(x, y, xPrecursorMz, yPrecursorMz, ...) {
+dynlib_map <- function(x, y, xPrecursorMz, yPrecursorMz, n = 3, m = 0.6, ...) {
   if (!nrow(x) || !nrow(y))
     return(list(x = matrix(numeric(), ncol = 2, nrow = 0),
                 y = matrix(numeric(), ncol = 2, nrow = 0)))
@@ -118,27 +108,10 @@ dynlib_map <- function(x, y, xPrecursorMz, yPrecursorMz, ...) {
           matched2 <- rbind(matched2, matched_nl2)
       }
   }
+  ## Store the m/z weighted intensity sum as an attribute
+  attributes(matched1)$wintensity_sum <- sum(((intensity1^n) * (mz1^m))^2)
+  attributes(matched2)$wintensity_sum <- sum(((intensity2^n) * (mz2^m))^2)
   return(list(x = matched1, y = matched2))
-}
-
-
-dynlib_fun <- function(x, y, ...) {
-
-  peaks_x <- peaks(x)
-  peaks_y <- peaks(y)
-
-
-  precursor_x <- precursorMz(x)
-  precursor_y <- precursorMz(y)
-
-
-  matched <- dynlib_map(peaks_x, peaks_y, precursor_x, precursor_y)
-
-
-  result <- symmetric_dotproduct_combined(matched$x, matched$y)
-
-
-  return(result$similarity_score)
 }
 
 count_common_peaks <- function(x, y, xPrecursorMz, yPrecursorMz, ...) {
@@ -194,12 +167,23 @@ count_common_peaks <- function(x, y, xPrecursorMz, yPrecursorMz, ...) {
 
 
 
-
+## To use these functions with `matchSpectra()`:
+## Use the `dynlib_map` function as `MAPFUN` and the
+## `dynlib_symmetric_dotproduct` function as `FUN`.
+csp <- CompareSpectraParam(
+    ppm = 0,
+    tolerance = 0.005,
+    threshold = 0.8
+    requirePrecursor = TRUE,
+    MAPFUN = dynlib_map,
+    FUN = dynlib_symmetric_dotproduct
+)
+res <- matchSpectra(query = xxx, target = yyy, param = csp)
 
 library(BiocParallel)
 library(Spectra)
 
-final_sim <- function(st_sps, filtered_dy_sps, threshold = 0.8, ppm = 5, tolerance = 0.005) {
+final_sim <- function(st_sps, filtered_dy_sps, threshold = 0.8, ppm = 0, tolerance = 0.005) {
   library(MetaboAnnotation)
 
   param <- CompareSpectraParam(

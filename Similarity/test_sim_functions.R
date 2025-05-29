@@ -30,67 +30,82 @@ test_that("dynlib_map works", {
     res <- dynlib_map(a, b, 12, 12)
     expect_true(is.list(res))
     expect_equal(names(res), c("x", "y"))
-    expect_equal(res$x, cbind(mz = 15, intensity = 2))
-    expect_equal(res$y, cbind(mz = 15, intensity = 1))
+    x <- res$x
+    expect_true(attributes(x)$wintensity_sum > 0)
+    attributes(x)$wintensity_sum <- NULL
+    y <- res$y
+    expect_true(attributes(y)$wintensity_sum > 0)
+    attributes(y)$wintensity_sum <- NULL
+    expect_equal(x, cbind(mz = 15, intensity = 2))
+    expect_equal(y, cbind(mz = 15, intensity = 1))
 
     ## Direct and neutral loss matches
     res <- dynlib_map(a, b, 0, 10)
     expect_true(is.list(res))
     expect_equal(names(res), c("x", "y"))
-    expect_equal(res$x, cbind(mz = c(15, 23), intensity = c(2, 4)))
-    expect_equal(res$y, cbind(mz = c(15, 33), intensity = c(1, 2)))
+    x <- res$x
+    expect_true(attributes(x)$wintensity_sum > 0)
+    attributes(x)$wintensity_sum <- NULL
+    expect_equal(x, cbind(mz = c(15, 23), intensity = c(2, 4)))
+    y <- res$y
+    expect_true(attributes(y)$wintensity_sum > 0)
+    attributes(y)$wintensity_sum <- NULL
+    expect_equal(y, cbind(mz = c(15, 33), intensity = c(1, 2)))
 
     ## No matches
     d <- cbind(mz = c(33.3, 46.1), intensity = c(1, 2))
     res <- dynlib_map(a, d, 0, 0)
     expect_true(is.list(res))
     expect_equal(names(res), c("x", "y"))
-    expect_equal(res$x, cbind(mz = numeric(), intensity = numeric()))
-    expect_equal(res$y, cbind(mz = numeric(), intensity = numeric()))
+    x <- res$x
+    expect_true(attributes(x)$wintensity_sum > 0)
+    attributes(x)$wintensity_sum <- NULL
+    y <- res$y
+    expect_true(attributes(y)$wintensity_sum > 0)
+    attributes(y)$wintensity_sum <- NULL
+    expect_equal(x, cbind(mz = numeric(), intensity = numeric()))
+    expect_equal(y, cbind(mz = numeric(), intensity = numeric()))
 
     ## Only neutral loss matches
     res <- dynlib_map(a, d, 0, 20)
     expect_true(is.list(res))
     expect_equal(names(res), c("x", "y"))
-    expect_equal(res$x, cbind(mz = c(13, 26), intensity = c(1, 5)))
-    expect_equal(res$y, cbind(mz = c(33, 46), intensity = c(1, 2)))
+    x <- res$x
+    expect_true(attributes(x)$wintensity_sum > 0)
+    attributes(x)$wintensity_sum <- NULL
+    y <- res$y
+    expect_true(attributes(y)$wintensity_sum > 0)
+    attributes(y)$wintensity_sum <- NULL
+    expect_equal(x, cbind(mz = c(13, 26), intensity = c(1, 5)))
+    expect_equal(y, cbind(mz = c(33, 46), intensity = c(1, 2)))
 })
 
 
 
 
-test_that("similarity score works", {
-  x <- cbind(mz = c(15,17),
+test_that("dynlib_symmetric_dotproduct works", {
+  x <- cbind(mz = c(15, 17),
              intensity = c(2, 19))
   y <- cbind(mz = c(15, 17),
              intensity = c(2, 19))
-  
-  res <- symmetric_dotproduct_combined(x, y)
-  expect_true(is.list(res))
-  expect_equal(names(res), c("common_peaks", "similarity_score"))
-  expect_equal(res$common_peaks, 2)
-  expect_equal(res$similarity_score, 1)
-  
+  m <- dynlib_map(x, y, 0, 0)
+
+  res <- dynlib_symmetric_dotproduct(m$x, m$y)
+  expect_equal(res, 1)
+
   x <- cbind(mz = c(10, 17, 5, 9),
              intensity = c(2, 19, 6, 5))
   y <- cbind(mz = c(10, 17, 5, 9),
              intensity = c(2, 19, 7, 8))
-  res <- symmetric_dotproduct_combined(x, y)
-  expect_true(is.list(res))
-  expect_equal(names(res), c("common_peaks", "similarity_score"))
-  expect_equal(res$common_peaks, 4)
-  expect_equal(res$similarity_score, 0.9984423)
-  
-  
+  m <- dynlib_map(x, y, 0, 0)
+  res <- dynlib_symmetric_dotproduct(m$x, m$y)
+  expect_equal(res, 0.9984423)
+
   x <- cbind(mz = c(10, 17, 5, 9),
              intensity = c(8, 9, 6, 5))
   y <- cbind(mz = c(10, 17, 5, 9),
              intensity = c(2, 19, 7, 8))
-  res <- symmetric_dotproduct_combined(x, y)
-  expect_true(is.list(res))
-  expect_equal(names(res), c("common_peaks", "similarity_score"))
-  expect_equal(res$common_peaks, 4)
-  expect_equal(res$similarity_score, 0.7850193)
-  
+  m <- dynlib_map(x, y, 0, 0)
+  res <- dynlib_symmetric_dotproduct(m$x, m$y)
+  expect_equal(res, 0.7850193)
 })
-
