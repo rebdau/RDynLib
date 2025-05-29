@@ -1,8 +1,8 @@
 library(Spectra)
-library(dplyr)
-library(S4Vectors)
-library(IRanges)
-library(tidyverse)
+#library(dplyr)
+#library(S4Vectors)
+#library(IRanges)
+#library(tidyverse)
 
 neutral_loss <- function(mz_values, precursorMz) {
   round(precursorMz - mz_values)
@@ -15,8 +15,9 @@ round_perl <- function(number) {
 remove_duplicates <- function(mz, intensity) {
   mz <- round_perl(mz)
   unique_mz <- unique(mz)
-  max_intensity <- sapply(unique_mz, function(m) max(intensity[mz == m], na.rm = TRUE))
-  return(list(mz = unique_mz, intensity = max_intensity))
+  list(mz = unique_mz,
+       intensity = vapply(unique_mz, function(m) max(intensity[mz == m],
+                                                     na.rm = TRUE), NA_real_))
 }
 
 #' @description
@@ -94,30 +95,29 @@ dynlib_map <- function(x, y, xPrecursorMz, yPrecursorMz, ...) {
 
   # Matching exact m/z
   common_mz <- intersect(mz1, mz2)
-  matched1 <- cbind(mz1[mz1 %in% common_mz], intensity1[mz1 %in% common_mz])
-  matched2 <- cbind(mz2[mz2 %in% common_mz], intensity2[mz2 %in% common_mz])
+  keep_mz1 <- mz1 %in% common_mz
+  keep_mz2 <- mz2 %in% common_mz
+  matched1 <- cbind(mz = mz1[keep_mz1], intensity = intensity1[keep_mz1])
+  matched2 <- cbind(mz = mz2[keep_mz2], intensity = intensity2[keep_mz2])
 
-  # Remaining peaks
-  remaining_idx1 <- !(mz1 %in% common_mz)
-  remaining_idx2 <- !(mz2 %in% common_mz)
-
-  nl1 <- neutral_loss(mz1[remaining_idx1], xPrecursorMz)
-  nl2 <- neutral_loss(mz2[remaining_idx2], yPrecursorMz)
-  common_nl <- intersect(nl1, nl2)
-
-  for (nl in common_nl) {
-    idx_nl1 <- which(nl1 == nl)
-    idx_nl2 <- which(nl2 == nl)
-
-    matched_nl1 <- cbind(mz1[remaining_idx1][idx_nl1],
-                         intensity1[remaining_idx1][idx_nl1])
-    matched_nl2 <- cbind(mz2[remaining_idx2][idx_nl2],
-                         intensity2[remaining_idx2][idx_nl2])
-
-    matched1 <- rbind(matched1, matched_nl1)
-    matched2 <- rbind(matched2, matched_nl2)
+  ## Process the remaining peaks to see if they could match as neutral losses
+  remaining_mz1 <- !keep_mz1
+  remaining_mz2 <- !keep_mz2
+  if (any(remaining_mz1) && any(remaining_mz2)) {
+      nl1 <- neutral_loss(mz1[remaining_mz1], xPrecursorMz)
+      nl2 <- neutral_loss(mz2[remaining_mz2], yPrecursorMz)
+      common_nl <- intersect(nl1, nl2)
+      if (length(common_nl)) {
+          keep_mz1 <- nl1 %in% common_nl
+          keep_mz2 <- nl2 %in% common_nl
+          matched_nl1 <- cbind(mz = mz1[remaining_mz1][keep_mz1],
+                               intensity = intensity1[remaining_mz1][keep_mz1])
+          matched_nl2 <- cbind(mz = mz2[remaining_mz2][keep_mz2],
+                               intensity = intensity2[remaining_mz2][keep_mz2])
+          matched1 <- rbind(matched1, matched_nl1)
+          matched2 <- rbind(matched2, matched_nl2)
+      }
   }
-
   return(list(x = matched1, y = matched2))
 }
 
