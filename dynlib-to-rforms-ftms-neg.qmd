@@ -487,7 +487,7 @@ As a first table we store a *metadata* table to the database. This table should
 contain some general info on the version and content of the database.
 
 ```{r}
-md <- make_metadata(source = "DynLib FTMS pos", url = NA_character_,
+md <- make_metadata(source = "DynLib FTMS neg", url = NA_character_,
                     source_version = "1.0.0", source_date = "2025-05-15")
 dbWriteTable(con, name = "metadata", md, row.names = FALSE)
 ```
