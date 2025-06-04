@@ -2,7 +2,7 @@ library(Spectra)
 
 
 neutral_loss <- function(mz_values, precursorMz) {
-  round(precursorMz - mz_values)
+  round(precursorMz) - mz_values
 }
 
 round_perl <- function(number) {
@@ -71,6 +71,7 @@ dynlib_map <- function(x, y, xPrecursorMz, yPrecursorMz, n = 3, m = 0.6, ...) {
   if (!nrow(x) || !nrow(y))
     return(list(x = matrix(numeric(), ncol = 2, nrow = 0),
                 y = matrix(numeric(), ncol = 2, nrow = 0)))
+
   
   cleaned1 <- remove_duplicates(x[, 1L], x[, 2L])
   cleaned2 <- remove_duplicates(y[, 1L], y[, 2L])
@@ -106,8 +107,8 @@ dynlib_map <- function(x, y, xPrecursorMz, yPrecursorMz, n = 3, m = 0.6, ...) {
     }
   }
   ## Store the m/z weighted intensity sum as an attribute
-  attributes(matched1)$wintensity_sum <- sum(((intensity1^n) * (mz1^m))^2)
-  attributes(matched2)$wintensity_sum <- sum(((intensity2^n) * (mz2^m))^2)
+  attributes(matched1)$wintensity_sum <- sum(((intensity1^n) * (mz1 ^m))^2)
+  attributes(matched2)$wintensity_sum <- sum(((intensity2^n) * (mz2 ^m))^2)
   return(list(x = matched1, y = matched2))
 }
 
@@ -169,12 +170,12 @@ count_common_peaks <- function(x, y, xPrecursorMz, yPrecursorMz, ...) {
 ## `dynlib_symmetric_dotproduct` function as `FUN`.
 
 #csp <- CompareSpectraParam(
- # ppm = 0,
-  #tolerance = 0.005,
-  #threshold = 0.8,
-  #requirePrecursor = TRUE,
-  #MAPFUN = dynlib_map,
-  #FUN = dynlib_symmetric_dotproduct
+# ppm = 0,
+#tolerance = 0.005,
+#threshold = 0.8,
+#requirePrecursor = TRUE,
+#MAPFUN = dynlib_map,
+#FUN = dynlib_symmetric_dotproduct
 #)
 
 #res <- matchSpectra(query = xxx, target = yyy, param = csp)
@@ -191,10 +192,12 @@ sim_final_final <- function(st_sps, dy_sps, polarity_query,
   #Compare just with flax seed's compound that match the following criteria
   st_filtered <- st_sps[st_sps$polarity == polarity_query ]
   
+  #st_filtered$precursorMz[st_filtered$msLevel %in% c(3, 4, 5)] <- round_perl(st_filtered$precursorMz[st_filtered$msLevel %in% c(3, 4, 5)])
+  
   #Compare just with Dynlib's compound that match the following criteria
   
   dy_filtered <- dy_sps[dy_sps$polarity == polarity_target & 
-                        dy_sps$machine == machine_target & !is.na(dy_sps$name) 
+                          dy_sps$machine == machine_target & !is.na(dy_sps$name) 
                         & !(dy_sps$name == "") & !(grepl("^!", dy_sps$name))]
   
   if (length(st_filtered) == 0 || length(dy_filtered) == 0) {
@@ -208,7 +211,8 @@ sim_final_final <- function(st_sps, dy_sps, polarity_query,
     threshold = threshold,
     requirePrecursor = TRUE,
     MAPFUN = dynlib_map,
-    FUN = dynlib_symmetric_dotproduct
+    FUN = dynlib_symmetric_dotproduct,
+    matchedPeaksCount  = TRUE
   )
   
   # Calcul de similarité

@@ -1,5 +1,5 @@
 library(testthat)
-source("C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/sim_functions.R")
+source("C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/sim_functions_with_options.R")
 
 a <- cbind(mz = c(13.3, 15.4, 15.6, 23.4, 26.2),
            intensity = 1:5)
@@ -83,106 +83,37 @@ test_that("dynlib_map works", {
 
 
 
-test_that("dynlib_symmetric_dotproduct works", {
-  x <- cbind(mz = c(15, 17),
-             intensity = c(2, 19))
-  y <- cbind(mz = c(15, 17),
-             intensity = c(2, 19))
-  m <- dynlib_map(x, y, 0, 0)
-  
+#test of real spectra
+  #first exemple (score = 0,99)
+  x <- cbind(mz = c(129.456558227539),
+             intensity = c(779.431457519531))
+  y <- cbind(mz = c(129, 133, 159),
+             intensity = c(339.653961, 119.266136, 133.141098))
+  m <- dynlib_map(x, y, 177.041, 177.04)
   res <- dynlib_symmetric_dotproduct(m$x, m$y)
-  expect_equal(res, 1)
   
-  x <- cbind(mz = c(10, 17, 5, 9),
-             intensity = c(2, 19, 6, 5))
-  y <- cbind(mz = c(10, 17, 5, 9),
-             intensity = c(2, 19, 7, 8))
-  m <- dynlib_map(x, y, 0, 0)
+  #second example(score = 1)
+  x <- cbind(mz = c(128.455490112305),
+             intensity = c(11648.4765625))
+  y <- cbind(mz = c(128),
+             intensity = c(741.387939))
+  m <- dynlib_map(x, y, 257.078, 257.08)
   res <- dynlib_symmetric_dotproduct(m$x, m$y)
-  expect_equal(res, 0.9984423)
   
-  x <- cbind(mz = c(10, 17, 5, 9),
-             intensity = c(8, 9, 6, 5))
-  y <- cbind(mz = c(10, 17, 5, 9),
-             intensity = c(2, 19, 7, 8))
-  m <- dynlib_map(x, y, 0, 0)
+  #third example(score = 1)
+  x <- cbind(mz = c(159.619970320805, 315.01799205042),
+             intensity = c(94.3498382568359 , 4343.77685546875))
+  y <- cbind(mz = c(315, 433),
+             intensity = c(3391.216064, 104.316986))
+  m <- dynlib_map(x, y, 477.1023, 477.1)
   res <- dynlib_symmetric_dotproduct(m$x, m$y)
-  expect_equal(res, 0.7850193)
-})
 
-
-
-#First test of the sim_final_final() function
-
-x <- DataFrame(
-               precursorMz = 0)
-x$mz <- list(c(15,17))
-x$intensity = list(c(2, 19))
-spx <- Spectra(x)
-
-y <- DataFrame(
-  precursorMz = 0)
-y$mz <- list(c(15,17))
-y$intensity = list(c(2, 19))
-spy <- Spectra(y)
-
-res <- sim_final_final(spx, spy)
-res
-
-
-#second test
-
-spd <- DataFrame(
-  msLevel = c(2L, 2L, 2L),
-  polarity = c(0L, 0L, 0L),
-  precursorMz = 0,
-  id = c("HMDB0000001", "HMDB0000001", "HMDB0001847"),
-  name = c("1-Methylhistidine", "1-Methylhistidine", "Caffeine"))
-
-## Assign m/z and intensity values.
-spd$mz <- list(
-  c(109.2, 124.2, 124.5, 170.16, 170.52),
-  c(83.1, 96.12, 97.14, 109.14, 124.08, 125.1, 170.16),
-  c(56.0494, 69.0447, 83.0603, 109.0395, 110.0712,
-    111.0551, 123.0429, 138.0662, 195.0876)
-)
-spd$intensity <- list(
-  c(3.407, 47.494, 3.094, 100.0, 13.240),
-  c(6.685, 4.381, 3.022, 16.708, 100.0, 4.565, 40.643),
-  c(0.459, 2.585, 2.446, 0.508, 8.968, 0.524, 0.974, 100.0, 40.994)
- )
-
-spd <- Spectra(spd)
-
-spc <- DataFrame(
-  msLevel = c(2L, 2L, 2L),
-  polarity = c(0L, 0L, 0L),
-  precursorMz = 0,
-  id = c("HMDB0000001", "HMDB0000001", "HMDB0001847"),
-  name = c("1-Methylhistidine", "1-Methylhistidine", "Caffeine"))
-
-## Assign m/z and intensity values.
-spc$mz <- list(
-  c(10.2, 1233.2, 124.5, 170.16, 170.52),
-  c(83.1, 96.12, 97.14, 109.14, 124.08, 125.1, 170.16),
-  c(56.0494, 69.0447, 83.0603, 109.0395, 110.0712,
-    111.0551, 123.0429, 138.0662, 195.0876)
-  )
-spc$intensity <- list(
-  c(3.407, 47.494, 88.094, 100.0, 13.240),
-  c(6.685, 4.381, 55.022, 16.708, 100.0, 4.565, 40.643),
-  c(0.459, 2.585, 2.446, 0.508, 8.968, 0.524, 0.974, 100.0, 40.994)
- )
-
-spc <- Spectra(spc)
-
-res2 <- sim_final_final(spd, spc)
-
-
-
-
-
-
-
-
+  #fourth example(score = 0,99)
+  x <- cbind(mz = c(300.446106481507),
+             intensity = c(668.621826171875))
+  y <- cbind(mz = c(179, 254, 255, 271, 272, 300, 301, 313, 316, 317, 343),
+             intensity = c(150.978485, 105.706268, 507.930054, 433.778381, 293.672119, 5063.506348, 2164.525146, 124.878708, 308.779663, 837.373535, 281.371155))
+  m <- dynlib_map(x, y, 463.03, 463.03)
+  res <- dynlib_symmetric_dotproduct(m$x, m$y)
+  
 

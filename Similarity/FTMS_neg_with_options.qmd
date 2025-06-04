@@ -63,6 +63,7 @@ negative integuments.
 
 
 ```{r}
+source("C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/sim_functions_with_options.R")
 result <- sim_final_final(ft_neg, dy_sps, polarity_query = 0, polarity_target = 0, machine_target = "FTMS", threshold = 0.8)
 #save the result to a .RData object
 save(result, file = "C:/Users/amentag/Desktop/these/These/clones/RDynlib/data/match_results_ftneg2_corr.RData")
@@ -78,6 +79,14 @@ two databases
 
 
 ```{r}
-
+sp1 <- ft_neg[spectraData(ft_neg)$scanIndex == 2564]
+mz(sp1)
+intensity(sp1)
+precursorMz(sp1)
+sp3 <- dy_sps[spectraData(dy_sps)$acquisitionNum == 146494]
+mz(sp3)
+intensity(sp3)
+precursorMz(sp3)
+#plotSpectraMirror(sp1, sp3)
 ```
 
