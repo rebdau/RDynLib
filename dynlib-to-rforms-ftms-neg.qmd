@@ -348,7 +348,7 @@ We will need to add these if not already present. In addition, we set the
 ```{r}
 #' Define the polarity for the present data: 0 for negative, 1 for positive.
 pol <- 0L
-proj <- "FTMS_pos"
+proj <- "FTMS_neg"
 
 #' Define the spectrum_id for this MS level:
 sid <- seq_len(nrow(ms2))
@@ -478,7 +478,7 @@ all.equal(b$original_id, ms3_ids)
 All tables are created and we can next export/write these to a SQLite database.
 
 ```{r}
-dbf <- file.path("C:/Users/amentag/Desktop/these/These/clones/RDynlib/data", "DyLib_FTMS_neg.sqlite")
+dbf <- file.path("C:/Users/amentag/Desktop/these/These/clones/RDynlib/data", "DyLib_FTMS_neg2.sqlite")
 if (file.exists(dbf)) file.remove(dbf)
 con <- dbConnect(SQLite(), dbf)
 ```
@@ -557,7 +557,7 @@ At last we evaluate whether we can use the created database using the
 library(Spectra)
 library(CompoundDb)
 
-dbf <- file.path("C:/Users/amentag/Desktop/these/These/clones/RDynlib/data", "DyLib_FTMS_neg.sqlite")
+dbf <- file.path("C:/Users/amentag/Desktop/these/These/clones/RDynlib/data", "DyLib_FTMS_neg2.sqlite")
 
 #' Load the database as a `CompDb` object
 cdb <- CompDb(dbf)
@@ -578,7 +578,7 @@ metadata(cdb) |> head()
 
 
 ```{r}
-con <- dbConnect(RSQLite::SQLite(), "C:/Users/amentag/Desktop/these/These/clones/RDynlib/data/DyLib_FTMS_neg.sqlite")
+con <- dbConnect(RSQLite::SQLite(), "C:/Users/amentag/Desktop/these/These/clones/RDynlib/data/DyLib_FTMS_neg2.sqlite")
 dbListTables(con)
 
 ```
@@ -629,6 +629,10 @@ dbReadTable(con, "msms_spectrum")
 
 
 
+```{r}
+df <- dbGetQuery(con, "SELECT * FROM msms_spectrum WHERE ms_level = 3")
+df
+```
 
 
 

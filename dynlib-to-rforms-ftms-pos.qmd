@@ -28,7 +28,7 @@ We first inspect the data for one of the databases, the *FTMS positive polarity*
 data.
 
 ```{r}
-pth <- "data/database_FTMS_pos/CSV"
+pth <- "C:/Users/amentag/Desktop/these/Ahlam/these/equip_msdata/database_FTMS_pos/CSV"
 dir(pth)
 ```
 
@@ -553,7 +553,7 @@ all.equal(b$original_id, ms3_ids)
 All tables are created and we can next export/write these to a SQLite database.
 
 ```{r}
-dbf <- file.path("data", "DyLib_FTMS_pos.sqlite")
+dbf <- file.path("C:/Users/amentag/Desktop/these/These/clones/RDynlib/data", "DyLib_FTMS_pos2.sqlite")
 if (file.exists(dbf)) file.remove(dbf)
 con <- dbConnect(SQLite(), dbf)
 ```
@@ -632,7 +632,7 @@ At last we evaluate whether we can use the created database using the
 library(Spectra)
 library(CompoundDb)
 
-dbf <- file.path("data", "DyLib_FTMS_pos.sqlite")
+dbf <- file.path("C:/Users/amentag/Desktop/these/These/clones/RDynlib/data", "DyLib_FTMS_pos2.sqlite")
 
 #' Load the database as a `CompDb` object
 cdb <- CompDb(dbf)
@@ -645,12 +645,88 @@ Get access to the compounds:
 compounds(cdb) |> head()
 ```
 
+
+```{r}
+metadata(cdb) |> head()
+```
+
+```{r}
+con <- dbConnect(RSQLite::SQLite(), "C:/Users/amentag/Desktop/these/These/clones/RDynlib/data/DyLib_FTMS_pos2.sqlite")
+dbListTables(con)
+
+```
+
+```{r}
+dbReadTable(con, "ms_compound")
+
+```
+
+```{r}
+dbReadTable(con, "msms_spectrum")
+```
+
+
+```{r}
+
+df <- dbGetQuery(con, "SELECT * FROM msms_spectrum WHERE ms_level = 3")
+
+
+head(df)
+
+```
+
+```{r}
+tb <- dbGetQuery(con, "SELECT * FROM msms_spectrum WHERE acquisitionNum = 1928")
+
+
+head(tb)
+```
+
+
+
+```{r}
+dbReadTable(con, "experiment")
+```
+
+```{r}
+dbReadTable(con, "synonym")
+```
+
+
+
+
+```{r}
+dbReadTable(con, "msms_spectrum")
+```
+
+
+
+
+
+
+
 Get access to the MS spectra data.
 
 ```{r}
 s <- Spectra(cdb)
 s
 ```
+
+
+```{r}
+s_d <- spectraData(s)
+```
+
+
+```{r}
+#Function for adding spectra to a Compdb database
+spectra_object <- Spectra(msms_spectrum)
+cdb2 <- CompDb(con)
+insertSpectra(cdb2, spectra_object)
+dbReadTable(con, "msms_spectrum_peak")
+```
+
+
 
 Check if we could get all fragment spectra for one compound.
 

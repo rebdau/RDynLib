@@ -1,11 +1,8 @@
 library(Spectra)
-#library(dplyr)
-#library(S4Vectors)
-#library(IRanges)
-#library(tidyverse)
+
 
 neutral_loss <- function(mz_values, precursorMz) {
-  round(precursorMz - mz_values)
+  round(precursorMz) - mz_values
 }
 
 round_perl <- function(number) {
@@ -56,7 +53,7 @@ dynlib_symmetric_dotproduct <- function(x, y, n = 3, m = 0.6, ...) {
   intensity2 <- (intensity2^n) * (mz2^m)
 
   sum(intensity1 * intensity2)^2 /
-      (attributes(x)$wintensity_sum * attributes(y)$wintensity_sum)
+    (attributes(x)$wintensity_sum * attributes(y)$wintensity_sum)
 }
 
 #' @description
@@ -74,6 +71,7 @@ dynlib_map <- function(x, y, xPrecursorMz, yPrecursorMz, n = 3, m = 0.6, ...) {
   if (!nrow(x) || !nrow(y))
     return(list(x = matrix(numeric(), ncol = 2, nrow = 0),
                 y = matrix(numeric(), ncol = 2, nrow = 0)))
+
 
   cleaned1 <- remove_duplicates(x[, 1L], x[, 2L])
   cleaned2 <- remove_duplicates(y[, 1L], y[, 2L])
@@ -94,23 +92,23 @@ dynlib_map <- function(x, y, xPrecursorMz, yPrecursorMz, n = 3, m = 0.6, ...) {
   remaining_mz1 <- !keep_mz1
   remaining_mz2 <- !keep_mz2
   if (any(remaining_mz1) && any(remaining_mz2)) {
-      nl1 <- neutral_loss(mz1[remaining_mz1], xPrecursorMz)
-      nl2 <- neutral_loss(mz2[remaining_mz2], yPrecursorMz)
-      common_nl <- intersect(nl1, nl2)
-      if (length(common_nl)) {
-          keep_mz1 <- nl1 %in% common_nl
-          keep_mz2 <- nl2 %in% common_nl
-          matched_nl1 <- cbind(mz = mz1[remaining_mz1][keep_mz1],
-                               intensity = intensity1[remaining_mz1][keep_mz1])
-          matched_nl2 <- cbind(mz = mz2[remaining_mz2][keep_mz2],
-                               intensity = intensity2[remaining_mz2][keep_mz2])
-          matched1 <- rbind(matched1, matched_nl1)
-          matched2 <- rbind(matched2, matched_nl2)
-      }
+    nl1 <- neutral_loss(mz1[remaining_mz1], xPrecursorMz)
+    nl2 <- neutral_loss(mz2[remaining_mz2], yPrecursorMz)
+    common_nl <- intersect(nl1, nl2)
+    if (length(common_nl)) {
+      keep_mz1 <- nl1 %in% common_nl
+      keep_mz2 <- nl2 %in% common_nl
+      matched_nl1 <- cbind(mz = mz1[remaining_mz1][keep_mz1],
+                           intensity = intensity1[remaining_mz1][keep_mz1])
+      matched_nl2 <- cbind(mz = mz2[remaining_mz2][keep_mz2],
+                           intensity = intensity2[remaining_mz2][keep_mz2])
+      matched1 <- rbind(matched1, matched_nl1)
+      matched2 <- rbind(matched2, matched_nl2)
+    }
   }
   ## Store the m/z weighted intensity sum as an attribute
-  attributes(matched1)$wintensity_sum <- sum(((intensity1^n) * (mz1^m))^2)
-  attributes(matched2)$wintensity_sum <- sum(((intensity2^n) * (mz2^m))^2)
+  attributes(matched1)$wintensity_sum <- sum(((intensity1^n) * (mz1 ^m))^2)
+  attributes(matched2)$wintensity_sum <- sum(((intensity2^n) * (mz2 ^m))^2)
   return(list(x = matched1, y = matched2))
 }
 
@@ -170,35 +168,60 @@ count_common_peaks <- function(x, y, xPrecursorMz, yPrecursorMz, ...) {
 ## To use these functions with `matchSpectra()`:
 ## Use the `dynlib_map` function as `MAPFUN` and the
 ## `dynlib_symmetric_dotproduct` function as `FUN`.
-csp <- CompareSpectraParam(
-    ppm = 0,
-    tolerance = 0.005,
-    threshold = 0.8
-    requirePrecursor = TRUE,
-    MAPFUN = dynlib_map,
-    FUN = dynlib_symmetric_dotproduct
-)
-res <- matchSpectra(query = xxx, target = yyy, param = csp)
+
+#csp <- CompareSpectraParam(
+# ppm = 0,
+#tolerance = 0.005,
+#threshold = 0.8,
+#requirePrecursor = TRUE,
+#MAPFUN = dynlib_map,
+#FUN = dynlib_symmetric_dotproduct
+#)
+
+#res <- matchSpectra(query = xxx, target = yyy, param = csp)
 
 library(BiocParallel)
 library(Spectra)
 
-final_sim <- function(st_sps, filtered_dy_sps, threshold = 0.8, ppm = 0, tolerance = 0.005) {
-  library(MetaboAnnotation)
+sim_final_final <- function(st_sps, dy_sps, polarity_query,
+                            polarity_target, machine_target,
+                            threshold = 0.8, ppm = 0, tolerance = 0.005) {
 
+  library(MetaboAnnotation)
+  #Compare just with flax seed's compound that match the following criteria
+  st_filtered <- st_sps[st_sps$polarity == polarity_query ]
+
+  #st_filtered$precursorMz[st_filtered$msLevel %in% c(3, 4, 5)] <- round_perl(st_filtered$precursorMz[st_filtered$msLevel %in% c(3, 4, 5)])
+
+  #Compare just with Dynlib's compound that match the following criteria
+
+  dy_filtered <- dy_sps[dy_sps$polarity == polarity_target &
+                          dy_sps$machine == machine_target & !is.na(dy_sps$name)
+                        & !(dy_sps$name == "") & !(grepl("^!", dy_sps$name))]
+
+  if (length(st_filtered) == 0 || length(dy_filtered) == 0) {
+    return(data.frame())
+  }
+
+  # Paramètres de comparaison
   param <- CompareSpectraParam(
     ppm = ppm,
     tolerance = tolerance,
+    threshold = threshold,
     requirePrecursor = TRUE,
-    FUN = dynlib_fun,
-    threshold = threshold
+    MAPFUN = dynlib_map,
+    FUN = dynlib_symmetric_dotproduct,
+    matchedPeaksCount  = TRUE
   )
 
+  # Calcul de similarité
   matches <- matchSpectra(
-    query = st_sps,
-    target = filtered_dy_sps,
+    query = st_filtered,
+    target = dy_filtered,
     param = param
   )
+
+  # Extraction et filtrage des résultats
   df <- matchedData(matches)
   df <- df[!is.na(df$score) & df$score >= threshold, ]
 
