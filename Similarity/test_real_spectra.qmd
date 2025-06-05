@@ -80,16 +80,18 @@ source("C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/s
   y$mz <- list(c(129, 133, 159))
   y$intensity <- list(c(339.653961, 119.266136, 133.141098))
   y <- Spectra(y)
-  # with a ppm = 4000 the similarity score is 0.5736805 and 1 matched peak
+  # the similarity score is 0.9559187 and 1 matched peak
+ 
   compareSpectra(
-    x,
-    y,
-    MAPFUN = joinPeaks,
-    tolerance = 0,
-    ppm = 4000,
-    FUN = MsCoreUtils::ndotproduct,
-    matchedPeaksCount = TRUE,
-  )
+  x,
+  y,
+  ppm = 0,
+  MAPFUN = function(x, y, ...) joinPeaks(x, y, tolerance = 0.5),
+  FUN = function(x, y, ...) MsCoreUtils::ndotproduct(x, y, m = 0.6, n = 2),
+  matchedPeaksCount = TRUE
+)
+
+
   
 ```
 
@@ -107,17 +109,16 @@ source("C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/s
   y$mz <- list(c(128))
   y$intensity <- list(c(741.387939))
   y <- Spectra(y)
-  # with a ppm = 4000 the similarity score is 1 and 1 matched peak
+  # the similarity score is 1 and 1 matched peak
   compareSpectra(
-    x,
-    y,
-    MAPFUN = joinPeaks,
-    tolerance = 0,
-    ppm = 4000,
-    FUN = MsCoreUtils::ndotproduct,
-    matchedPeaksCount = TRUE,
-  )
-  
+  x,
+  y,
+  ppm = 0,
+  MAPFUN = function(x, y, ...) joinPeaks(x, y, tolerance = 0.5),
+  FUN = function(x, y, ...) MsCoreUtils::ndotproduct(x, y, m = 0.6, n = 2),
+  matchedPeaksCount = TRUE
+)
+
 ```
 
 ```{r}
@@ -133,16 +134,16 @@ source("C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/s
   y$mz <- list(c(315, 433))
   y$intensity <- list(c(3391.216064, 104.316986))
   y <- Spectra(y)
-  # with a ppm = 4000 the similarity score is 0.9495326 and 1 matched peak
+  # the similarity score is 0.9999986 and 1 matched peak
   compareSpectra(
-    x,
-    y,
-    MAPFUN = joinPeaks,
-    tolerance = 0,
-    ppm = 4000,
-    FUN = MsCoreUtils::ndotproduct,
-    matchedPeaksCount = TRUE,
-  )
+  x,
+  y,
+  ppm = 0,
+  MAPFUN = function(x, y, ...) joinPeaks(x, y, tolerance = 0.5),
+  FUN = function(x, y, ...) MsCoreUtils::ndotproduct(x, y, m = 0.6, n = 2),
+  matchedPeaksCount = TRUE
+)
+
 ```
 
 ```{r}
@@ -158,16 +159,16 @@ source("C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/s
   y$mz <- list(c(179, 254, 255, 271, 272, 300, 301, 313, 316, 317, 343))
   y$intensity <- list(c(150.978485, 105.706268, 507.930054, 433.778381, 293.672119, 5063.506348, 2164.525146, 124.878708, 308.779663, 837.373535, 281.371155))
   y <- Spectra(y)
-  # with a ppm = 4000 the similarity score is 0.4929186, and 1 matched peak
+  # the similarity score is 0.9666572, and 1 matched peak
   compareSpectra(
-    x,
-    y,
-    MAPFUN = joinPeaks,
-    tolerance = 0,
-    ppm = 4000,
-    FUN = MsCoreUtils::ndotproduct,
-    matchedPeaksCount = TRUE,
-  )
+  x,
+  y,
+  ppm = 0,
+  MAPFUN = function(x, y, ...) joinPeaks(x, y, tolerance = 0.5),
+  FUN = function(x, y, ...) MsCoreUtils::ndotproduct(x, y, m = 0.6, n = 2),
+  matchedPeaksCount = TRUE
+)
+
 ```
 
 **test of real spectra using "NeutralLossesCosine" function**
@@ -217,11 +218,11 @@ library(SpectriPy)
   
   param <- NeutralLossesCosine(
   tolerance = 0.5,
-  mz_power = 0,
-  intensity_power = 1,
+  mz_power = 0.6,
+  intensity_power = 2,
   ignore_peaks_above_precursor = TRUE
    )
-  #the similarity score is 0.8849364
+  #the similarity score is 0.977711
   res <- compareSpectriPy(x, y, param = param)
   res
   
@@ -244,8 +245,8 @@ library(SpectriPy)
   
   param <- NeutralLossesCosine(
   tolerance = 0.5,
-  mz_power = 0,
-  intensity_power = 1,
+  mz_power = 0.6,
+  intensity_power = 2,
   ignore_peaks_above_precursor = TRUE
    )
   #the similarity score is 1
@@ -269,11 +270,11 @@ library(SpectriPy)
   
   param <- NeutralLossesCosine(
   tolerance = 0.5,
-  mz_power = 0,
-  intensity_power = 1,
+  mz_power = 0.6,
+  intensity_power = 2,
   ignore_peaks_above_precursor = TRUE
    )
-  #the similarity score is 0.9992915
+  #the similarity score is 0.9999993
   res <- compareSpectriPy(x, y, param = param)
   res
 ```
@@ -294,11 +295,11 @@ library(SpectriPy)
   
   param <- NeutralLossesCosine(
   tolerance = 0.5,
-  mz_power = 0,
-  intensity_power = 1,
+  mz_power = 0.6,
+  intensity_power = 2,
   ignore_peaks_above_precursor = TRUE
    )
-  #the similarity score is 0.8981754
+  #the similarity score is 0.9831873
   res <- compareSpectriPy(x, y, param = param)
   res
 ```
