@@ -303,3 +303,5 @@ library(SpectriPy)
   res <- compareSpectriPy(x, y, param = param)
   res
 ```
+
+As a conclusion all functions return a similar similarity score for those examples
