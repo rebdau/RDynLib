@@ -25,13 +25,14 @@ source("C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/s
 **test of real spectra using "dynlib_symmetric_dotproduct" function**
 
 ```{r}
-  #first exemple (score = 0,99)
+  #first exemple (score = 0.9934364)
   x <- cbind(mz = c(129.456558227539),
              intensity = c(779.431457519531))
   y <- cbind(mz = c(129, 133, 159),
              intensity = c(339.653961, 119.266136, 133.141098))
   m <- dynlib_map(x, y, 177.041, 177.04)
   res <- dynlib_symmetric_dotproduct(m$x, m$y)
+  res
 ```
 
 ```{r}
@@ -305,3 +306,66 @@ library(SpectriPy)
 ```
 
 As a conclusion all functions return a similar similarity score for those examples
+
+below we test the 3 functions using a different precursorMz for each spectra object to take into account the neutral losses.
+
+```{r}
+  x <- DataFrame(precursorMz = 11)
+  mz <- list(c(129.456558227539, 132))
+  intensity <- list(c(779.431457519531, 119.266136))
+  x$mz <- mz
+  x$intensity <- intensity
+  x<- Spectra(x)
+  
+  y <- DataFrame(precursorMz = 1)
+  y$mz <- list(c(129, 133, 159))
+  y$intensity <- list(c(339.653961, 119.266136, 133.141098))
+  y <- Spectra(y)
+  
+  param <- NeutralLossesCosine(
+  tolerance = 0.5,
+  mz_power = 0.6,
+  intensity_power = 2,
+  ignore_peaks_above_precursor = TRUE
+   )
+  #the similarity score is 0
+  res <- compareSpectriPy(x, y, param = param)
+  res
+```
+
+```{r}
+  #first example
+  x <- DataFrame(precursorMz = 10)
+  mz <- list(c(129.456558227539, 132))
+  intensity <- list(c(779.431457519531, 119.266136))
+  x$mz <- mz
+  x$intensity <- intensity
+  x<- Spectra(x)
+  
+  y <- DataFrame(precursorMz = 0)
+  y$mz <- list(c(129, 133, 159))
+  y$intensity <- list(c(339.653961, 119.266136, 133.141098))
+  y <- Spectra(y)
+  # the similarity score is 0.9553826 and 1 matched peak
+ 
+  compareSpectra(
+  x,
+  y,
+  ppm = 0,
+  MAPFUN = function(x, y, ...) joinPeaks(x, y, tolerance = 0.5),
+  FUN = function(x, y, ...) MsCoreUtils::ndotproduct(x, y, m = 0.6, n = 2),
+  matchedPeaksCount = TRUE
+)
+
+```
+
+```{r}
+  #first exemple (score = 0.9934233)
+  x <- cbind(mz = c(129.456558227539, 132),
+             intensity = c(779.431457519531, 119.266136))
+  y <- cbind(mz = c(129, 133, 159),
+             intensity = c(339.653961, 119.266136, 133.141098))
+  m <- dynlib_map(x, y, 10, 0)
+  res <- dynlib_symmetric_dotproduct(m$x, m$y)
+  res
+```
