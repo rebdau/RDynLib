@@ -18,14 +18,14 @@ test_that("remove_duplicates works", {
 })
 
 test_that("dynlib_map works", {
-  
+
   ## Empty input. Expect empty result, but in a specific format
   res <- dynlib_map(matrix(numeric(), nrow = 0), matrix(numeric(), nrow = 0))
   expect_true(is.list(res))
   expect_equal(names(res), c("x", "y"))
   expect_true(nrow(res$x) == 0)
   expect_true(nrow(res$y) == 0)
-  
+
   ## Only direct matches, no neutral loss matches
   res <- dynlib_map(a, b, 12, 12)
   expect_true(is.list(res))
@@ -38,7 +38,7 @@ test_that("dynlib_map works", {
   attributes(y)$wintensity_sum <- NULL
   expect_equal(x, cbind(mz = 15, intensity = 2))
   expect_equal(y, cbind(mz = 15, intensity = 1))
-  
+
   ## Direct and neutral loss matches
   res <- dynlib_map(a, b, 0, 10)
   expect_true(is.list(res))
@@ -51,7 +51,7 @@ test_that("dynlib_map works", {
   expect_true(attributes(y)$wintensity_sum > 0)
   attributes(y)$wintensity_sum <- NULL
   expect_equal(y, cbind(mz = c(15, 33), intensity = c(1, 2)))
-  
+
   ## No matches
   d <- cbind(mz = c(33.3, 46.1), intensity = c(1, 2))
   res <- dynlib_map(a, d, 0, 0)
@@ -65,7 +65,7 @@ test_that("dynlib_map works", {
   attributes(y)$wintensity_sum <- NULL
   expect_equal(x, cbind(mz = numeric(), intensity = numeric()))
   expect_equal(y, cbind(mz = numeric(), intensity = numeric()))
-  
+
   ## Only neutral loss matches
   res <- dynlib_map(a, d, 0, 20)
   expect_true(is.list(res))
@@ -82,7 +82,6 @@ test_that("dynlib_map works", {
 
 
 
-
 #test of real spectra
   #first exemple (score = 0,99)
   x <- cbind(mz = c(129.456558227539),
@@ -91,7 +90,7 @@ test_that("dynlib_map works", {
              intensity = c(339.653961, 119.266136, 133.141098))
   m <- dynlib_map(x, y, 177.041, 177.04)
   res <- dynlib_symmetric_dotproduct(m$x, m$y)
-  
+
   #second example(score = 1)
   x <- cbind(mz = c(128.455490112305),
              intensity = c(11648.4765625))
@@ -99,7 +98,7 @@ test_that("dynlib_map works", {
              intensity = c(741.387939))
   m <- dynlib_map(x, y, 257.078, 257.08)
   res <- dynlib_symmetric_dotproduct(m$x, m$y)
-  
+
   #third example(score = 1)
   x <- cbind(mz = c(159.619970320805, 315.01799205042),
              intensity = c(94.3498382568359 , 4343.77685546875))
@@ -115,5 +114,3 @@ test_that("dynlib_map works", {
              intensity = c(150.978485, 105.706268, 507.930054, 433.778381, 293.672119, 5063.506348, 2164.525146, 124.878708, 308.779663, 837.373535, 281.371155))
   m <- dynlib_map(x, y, 463.03, 463.03)
   res <- dynlib_symmetric_dotproduct(m$x, m$y)
-  
-
