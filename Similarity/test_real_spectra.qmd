@@ -1,4 +1,4 @@
----
+      ---
 title: "Untitled"
 format: html
 server: shiny
@@ -16,24 +16,73 @@ In this quarto document we calculate the similarity score of 4 spectra examples 
 
 ```{r}
 library(Spectra)
+library(Spectra)
+library(SpectriPy)
 ```
 
 ```{r}
 source("C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/sim_functions_with_options.R")
 ```
 
-**test of real spectra using "dynlib_symmetric_dotproduct" function**
+first example 
 
 ```{r}
-  #first exemple (score = 0.9934364)
+  
   x <- cbind(mz = c(129.456558227539),
              intensity = c(779.431457519531))
   y <- cbind(mz = c(129, 133, 159),
              intensity = c(339.653961, 119.266136, 133.141098))
-  m <- dynlib_map(x, y, 177.041, 177.04)
-  res <- dynlib_symmetric_dotproduct(m$x, m$y)
-  res
+
 ```
+
+```{r}
+  sps1 <- DataFrame(precursorMz = 177.041)
+  mz <- list(129.456558227539)
+  intensity <- list(779.431457519531)
+  sps1$mz <- mz
+  sps1$intensity <- intensity
+  sps1<- Spectra(sps1)
+
+  sps2 <- DataFrame(precursorMz = 177.04)
+  sps2$mz <- list(c(129, 133, 159))
+  sps2$intensity <- list(c(339.653961, 119.266136, 133.141098))
+  sps2 <- Spectra(sps2)
+```
+
+```{r}
+res <- c()
+
+# 1. Similarity with dynlib_symmetric_dotproduct
+# (score : 0.9934364)
+m <- dynlib_map(x, y, 177.041, 177.04) 
+res["DynLib"] <- dynlib_symmetric_dotproduct(m$x, m$y)
+
+# 2. Similarity with compareSpectra + ndotproduct
+# (score  : 0.9559187 and 1 common)
+res["ndotproduct"] <- compareSpectra(
+  sps1, sps2,
+  ppm = 0,
+  MAPFUN = function(sps1, sps2, ...) joinPeaks(sps1, sps2, tolerance = 0.5),
+  FUN = function(sps1, sps2, ...) MsCoreUtils::ndotproduct(sps1, sps2, m = 0.6, n = 2),
+  matchedPeaksCount = TRUE
+)
+
+# 3. Similarity with NeutralLossesCosine
+# (score: 0.977711)
+param <- NeutralLossesCosine(
+  tolerance = 0.5,
+  mz_power = 0.6,
+  intensity_power = 2,
+  ignore_peaks_above_precursor = TRUE
+)
+res["neutral losses cosine"] <- compareSpectriPy(sps1, sps2, param = param)
+
+# Results
+print(res)
+
+```
+
+second example
 
 ```{r}
  #second example(score = 1)
@@ -41,23 +90,119 @@ source("C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/s
              intensity = c(11648.4765625))
   y <- cbind(mz = c(128),
              intensity = c(741.387939))
-  m <- dynlib_map(x, y, 257.078, 257.08)
-  res <- dynlib_symmetric_dotproduct(m$x, m$y)
+
 
 ```
 
 ```{r}
- #third example(score = 1)
-  x <- cbind(mz = c(159.619970320805, 315.01799205042),
+sps1 <- DataFrame(precursorMz = 257.078)
+  mz <- list(c(128.455490112305))
+  intensity <- list(c(11648.4765625))
+  sps1$mz <- mz
+  sps1$intensity <- intensity
+  sps1<- Spectra(sps1)
+
+  sps2 <- DataFrame(precursorMz = 257.08)
+  sps2$mz <- list(c(128))
+  sps2$intensity <- list(c(741.387939))
+  sps2 <- Spectra(sps2)
+  
+```
+
+
+```{r}
+res <- c()
+
+# 1. Similarity with dynlib_symmetric_dotproduct
+# (score : 1)
+m <- dynlib_map(x, y, 257.078, 257.08) 
+res["DynLib"] <- dynlib_symmetric_dotproduct(m$x, m$y)
+
+# 2. Similarity with compareSpectra + ndotproduct
+# (score  : 1 and 1 common)
+res["ndotproduct"] <- compareSpectra(
+  sps1, sps2,
+  ppm = 0,
+  MAPFUN = function(sps1, sps2, ...) joinPeaks(sps1, sps2, tolerance = 0.5),
+  FUN = function(sps1, sps2, ...) MsCoreUtils::ndotproduct(sps1, sps2, m = 0.6, n = 2),
+  matchedPeaksCount = TRUE
+)
+
+# 3. Similarity with NeutralLossesCosine
+# (score: 1)
+param <- NeutralLossesCosine(
+  tolerance = 0.5,
+  mz_power = 0.6,
+  intensity_power = 2,
+  ignore_peaks_above_precursor = TRUE
+)
+res["neutral losses cosine"] <- compareSpectriPy(sps1, sps2, param = param)
+
+# Results
+print(res)
+
+```
+
+third example
+```{r}
+x <- cbind(mz = c(159.619970320805, 315.01799205042),
              intensity = c(94.3498382568359 , 4343.77685546875))
-  y <- cbind(mz = c(315, 433),
+y <- cbind(mz = c(315, 433),
              intensity = c(3391.216064, 104.316986))
-  m <- dynlib_map(x, y, 477.1023, 477.1)
-  res <- dynlib_symmetric_dotproduct(m$x, m$y)
+
 ```
 
+
 ```{r}
-  #fourth example(score = 0,99)
+  sps1 <- DataFrame(precursorMz = 477.1023)
+  mz <- list(c(159.619970320805, 315.01799205042))
+  intensity <- list(c(94.3498382568359 , 4343.77685546875))
+  sps1$mz <- mz
+  sps1$intensity <- intensity
+  sps1<- Spectra(sps1)
+
+  sps2 <- DataFrame(precursorMz = 477.1)
+  sps2$mz <- list(c(315, 433))
+  sps2$intensity <- list(c(3391.216064, 104.316986))
+  sps2 <- Spectra(sps2)
+```
+
+
+```{r}
+res <- c()
+
+# 1. Similarity with dynlib_symmetric_dotproduct
+# (score : 1)
+m <- dynlib_map(x, y, 477.1023, 477.1) 
+res["DynLib"] <- dynlib_symmetric_dotproduct(m$x, m$y)
+
+# 2. Similarity with compareSpectra + ndotproduct
+# (score  : 0.9999986  and 1 common)
+res["ndotproduct"] <- compareSpectra(
+  sps1, sps2,
+  ppm = 0,
+  MAPFUN = function(sps1, sps2, ...) joinPeaks(sps1, sps2, tolerance = 0.5),
+  FUN = function(sps1, sps2, ...) MsCoreUtils::ndotproduct(sps1, sps2, m = 0.6, n = 2),
+  matchedPeaksCount = TRUE
+)
+
+# 3. Similarity with NeutralLossesCosine
+# (score: 0.9999993 )
+param <- NeutralLossesCosine(
+  tolerance = 0.5,
+  mz_power = 0.6,
+  intensity_power = 2,
+  ignore_peaks_above_precursor = TRUE
+)
+res["neutral losses cosine"] <- compareSpectriPy(sps1, sps2, param = param)
+
+# Results
+print(res)
+
+```
+
+fourth example
+```{r}
   x <- cbind(mz = c(300.446106481507),
              intensity = c(668.621826171875))
   y <- cbind(mz = c(179, 254, 255, 271, 272, 300, 301, 313, 316, 317, 343),
@@ -66,281 +211,70 @@ source("C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/s
   res <- dynlib_symmetric_dotproduct(m$x, m$y)
 ```
 
+
 ```{r}
-# example with neutral loss (score = 0.9946073)
+ sps1 <- DataFrame(precursorMz = 463.03)
+  mz <- list(c(300.446106481507))
+  intensity <- list(c(668.621826171875))
+  sps1$mz <- mz
+  sps1$intensity <- intensity
+  sps1<- Spectra(sps1)
+
+  sps2 <- DataFrame(precursorMz = 463.03)
+  sps2$mz <- list(c(179, 254, 255, 271, 272, 300, 301, 313, 316, 317, 343))
+  sps2$intensity <- list(c(150.978485, 105.706268, 507.930054, 433.778381, 293.672119, 5063.506348, 2164.525146, 124.878708, 308.779663, 837.373535, 281.371155))
+  sps2 <- Spectra(sps2)
+```
+
+```{r}
+res <- c()
+
+# 1. Similarity with dynlib_symmetric_dotproduct
+# (score : 0.9938881)
+m <- dynlib_map(x, y, 463.03, 463.03) 
+res["DynLib"] <- dynlib_symmetric_dotproduct(m$x, m$y)
+
+# 2. Similarity with compareSpectra + ndotproduct
+# (score  : 0.9666572  and 1 common)
+res["ndotproduct"] <- compareSpectra(
+  sps1, sps2,
+  ppm = 0,
+  MAPFUN = function(sps1, sps2, ...) joinPeaks(sps1, sps2, tolerance = 0.5),
+  FUN = function(sps1, sps2, ...) MsCoreUtils::ndotproduct(sps1, sps2, m = 0.6, n = 2),
+  matchedPeaksCount = TRUE
+)
+
+# 3. Similarity with NeutralLossesCosine
+# (score: 0.9831873 )
+param <- NeutralLossesCosine(
+  tolerance = 0.5,
+  mz_power = 0.6,
+  intensity_power = 2,
+  ignore_peaks_above_precursor = TRUE
+)
+res["neutral losses cosine"] <- compareSpectriPy(sps1, sps2, param = param)
+
+# Results
+print(res)
+
+```
+As a conclusion all functions return a similar similarity score for those examples
+
+
+below we test the 3 functions using a different precursorMz for each spectra
+object to take into account the neutral losses.
+
+```{r}
+#  (score = 0.9946073)
 x <- cbind(mz = c(123, 129.456558227539),
            intensity = c(200, 779.431457519531))
 y <- cbind(mz = c(129, 133, 159),
            intensity = c(339.653961, 119.266136, 133.141098))
-m <- dynlib_map(x, y, 0, 10)
+m <- dynlib_map(x, y, 200, 210)
 res <- dynlib_symmetric_dotproduct(m$x, m$y)
 res
 ```
 
-
-**test of real spectra using "compareSpectra" function**
-
-```{r}
-  #first example
-  x <- DataFrame(precursorMz = 177.041)
-  mz <- list(129.456558227539)
-  intensity <- list(779.431457519531)
-  x$mz <- mz
-  x$intensity <- intensity
-  x<- Spectra(x)
-
-  y <- DataFrame(precursorMz = 177.04)
-  y$mz <- list(c(129, 133, 159))
-  y$intensity <- list(c(339.653961, 119.266136, 133.141098))
-  y <- Spectra(y)
-  # the similarity score is 0.9559187 and 1 matched peak
-
-  compareSpectra(
-  x,
-  y,
-  ppm = 0,
-  MAPFUN = function(x, y, ...) joinPeaks(x, y, tolerance = 0.5),
-  FUN = function(x, y, ...) MsCoreUtils::ndotproduct(x, y, m = 0.6, n = 2),
-  matchedPeaksCount = TRUE
-)
-
-```
-
-```{r}
-
-  #second example
-  x <- DataFrame(precursorMz = 257.078)
-  mz <- list(c(128.455490112305))
-  intensity <- list(c(11648.4765625))
-  x$mz <- mz
-  x$intensity <- intensity
-  x<- Spectra(x)
-
-  y <- DataFrame(precursorMz = 257.08)
-  y$mz <- list(c(128))
-  y$intensity <- list(c(741.387939))
-  y <- Spectra(y)
-  # the similarity score is 1 and 1 matched peak
-  compareSpectra(
-  x,
-  y,
-  ppm = 0,
-  MAPFUN = function(x, y, ...) joinPeaks(x, y, tolerance = 0.5),
-  FUN = function(x, y, ...) MsCoreUtils::ndotproduct(x, y, m = 0.6, n = 2),
-  matchedPeaksCount = TRUE
-)
-
-```
-
-```{r}
- #third example
-  x <- DataFrame(precursorMz = 477.1023)
-  mz <- list(c(159.619970320805, 315.01799205042))
-  intensity <- list(c(94.3498382568359 , 4343.77685546875))
-  x$mz <- mz
-  x$intensity <- intensity
-  x<- Spectra(x)
-
-  y <- DataFrame(precursorMz = 477.1)
-  y$mz <- list(c(315, 433))
-  y$intensity <- list(c(3391.216064, 104.316986))
-  y <- Spectra(y)
-  # the similarity score is 0.9999986 and 1 matched peak
-  compareSpectra(
-  x,
-  y,
-  ppm = 0,
-  MAPFUN = function(x, y, ...) joinPeaks(x, y, tolerance = 0.5),
-  FUN = function(x, y, ...) MsCoreUtils::ndotproduct(x, y, m = 0.6, n = 2),
-  matchedPeaksCount = TRUE
-)
-
-```
-
-```{r}
-  #fourth example
-  x <- DataFrame(precursorMz = 463.03)
-  mz <- list(c(300.446106481507))
-  intensity <- list(c(668.621826171875))
-  x$mz <- mz
-  x$intensity <- intensity
-  x<- Spectra(x)
-
-  y <- DataFrame(precursorMz = 463.03)
-  y$mz <- list(c(179, 254, 255, 271, 272, 300, 301, 313, 316, 317, 343))
-  y$intensity <- list(c(150.978485, 105.706268, 507.930054, 433.778381, 293.672119, 5063.506348, 2164.525146, 124.878708, 308.779663, 837.373535, 281.371155))
-  y <- Spectra(y)
-  # the similarity score is 0.9666572, and 1 matched peak
-  compareSpectra(
-  x,
-  y,
-  ppm = 0,
-  MAPFUN = function(x, y, ...) joinPeaks(x, y, tolerance = 0.5),
-  FUN = function(x, y, ...) MsCoreUtils::ndotproduct(x, y, m = 0.6, n = 2),
-  matchedPeaksCount = TRUE
-)
-
-```
-
-```{r}
-# example with neutral loss (score = 0.9946073 if neutral loss considered)
-  x <- DataFrame(precursorMz = 0)
-  mz <- list(c(123, 129.456558227539))
-  intensity <- list(c(200, 779.431457519531))
-  x$mz <- mz
-  x$intensity <- intensity
-  x<- Spectra(x)
-
-  y <- DataFrame(precursorMz = 10)
-  y$mz <- list(c(129, 133, 159))
-  y$intensity <- list(c(339.653961, 119.266136, 133.141098))
-  y <- Spectra(y)
-  # the similarity score is 0.9559187 and 1 matched peak
-
-  compareSpectra(
-  x,
-  y,
-  ppm = 0,
-  MAPFUN = function(x, y, ...) joinPeaks(x, y, tolerance = 0.5),
-  FUN = function(x, y, ...) MsCoreUtils::ndotproduct(x, y, m = 0.6, n = 2),
-  matchedPeaksCount = TRUE
-)
-
-```
-
-
-**test of real spectra using "NeutralLossesCosine" function**
-
-```{r}
-#' R session:
-
-install.packages("reticulate")
-reticulate::install_miniconda()
-```
-
-```{r}
-#' R session:
-
-install.packages("BiocManager")
-
-
-install.packages("remotes")
-```
-
-```{r}
-#' R session:
-
-BiocManager::install("RforMassSpectrometry/SpectriPy")
-```
-
-```{r}
-#' R session:
-
-library(Spectra)
-library(SpectriPy)
-```
-
-```{r}
-  #first example
-  x <- DataFrame(precursorMz = 177.041)
-  mz <- list(129.456558227539)
-  intensity <- list(779.431457519531)
-  x$mz <- mz
-  x$intensity <- intensity
-  x<- Spectra(x)
-
-  y <- DataFrame(precursorMz = 177.04)
-  y$mz <- list(c(129, 133, 159))
-  y$intensity <- list(c(339.653961, 119.266136, 133.141098))
-  y <- Spectra(y)
-
-  param <- NeutralLossesCosine(
-  tolerance = 0.5,
-  mz_power = 0.6,
-  intensity_power = 2,
-  ignore_peaks_above_precursor = TRUE
-   )
-  #the similarity score is 0.977711
-  res <- compareSpectriPy(x, y, param = param)
-  res
-
-
-```
-
-```{r}
-  #second example
-  x <- DataFrame(precursorMz = 257.078)
-  mz <- list(c(128.455490112305))
-  intensity <- list(c(11648.4765625))
-  x$mz <- mz
-  x$intensity <- intensity
-  x<- Spectra(x)
-
-  y <- DataFrame(precursorMz = 257.08)
-  y$mz <- list(c(128))
-  y$intensity <- list(c(741.387939))
-  y <- Spectra(y)
-
-  param <- NeutralLossesCosine(
-  tolerance = 0.5,
-  mz_power = 0.6,
-  intensity_power = 2,
-  ignore_peaks_above_precursor = TRUE
-   )
-  #the similarity score is 1
-  res <- compareSpectriPy(x, y, param = param)
-  res
-```
-
-```{r}
- #third example
-  x <- DataFrame(precursorMz = 477.1023)
-  mz <- list(c(159.619970320805, 315.01799205042))
-  intensity <- list(c(94.3498382568359 , 4343.77685546875))
-  x$mz <- mz
-  x$intensity <- intensity
-  x<- Spectra(x)
-
-  y <- DataFrame(precursorMz = 477.1)
-  y$mz <- list(c(315, 433))
-  y$intensity <- list(c(3391.216064, 104.316986))
-  y <- Spectra(y)
-
-  param <- NeutralLossesCosine(
-  tolerance = 0.5,
-  mz_power = 0.6,
-  intensity_power = 2,
-  ignore_peaks_above_precursor = TRUE
-   )
-  #the similarity score is 0.9999993
-  res <- compareSpectriPy(x, y, param = param)
-  res
-```
-
-```{r}
- #fourth example
-  x <- DataFrame(precursorMz = 463.03)
-  mz <- list(c(300.446106481507))
-  intensity <- list(c(668.621826171875))
-  x$mz <- mz
-  x$intensity <- intensity
-  x<- Spectra(x)
-
-  y <- DataFrame(precursorMz = 463.03)
-  y$mz <- list(c(179, 254, 255, 271, 272, 300, 301, 313, 316, 317, 343))
-  y$intensity <- list(c(150.978485, 105.706268, 507.930054, 433.778381, 293.672119, 5063.506348, 2164.525146, 124.878708, 308.779663, 837.373535, 281.371155))
-  y <- Spectra(y)
-
-  param <- NeutralLossesCosine(
-  tolerance = 0.5,
-  mz_power = 0.6,
-  intensity_power = 2,
-  ignore_peaks_above_precursor = TRUE
-   )
-  #the similarity score is 0.9831873
-  res <- compareSpectriPy(x, y, param = param)
-  res
-```
 
 ```{r}
 # example with neutral loss (score = 0.9946073 if neutral loss considered)
@@ -367,11 +301,6 @@ library(SpectriPy)
 res
 ```
 
-
-As a conclusion all functions return a similar similarity score for those examples
-
-below we test the 3 functions using a different precursorMz for each spectra object to take into account the neutral losses.
-
 ```{r}
   x <- DataFrame(precursorMz = 11)
   mz <- list(c(129.456558227539, 132))
@@ -391,10 +320,14 @@ below we test the 3 functions using a different precursorMz for each spectra obj
   intensity_power = 2,
   ignore_peaks_above_precursor = FALSE
    )
-  #the similarity score is 0?????
+  #the similarity score is 0.002907737?????
   res <- compareSpectriPy(x, y, param = param)
   res
 ```
+the  "dynlib_symmetric_dotproduct" takes into accont the common peaks + neutral
+losses, in contrast "NeutralLossesCosine" considers just the neutral losses, 
+That's why we get a low score in the "NeutralLossesCosine" function.
+
 
 ```{r}
   # the similarity score is 0.9553826 and 1 matched peak
@@ -489,6 +422,7 @@ p <- NeutralLossesCosine(tolerance = 0.5,
                          ignore_peaks_above_precursor = FALSE)
 res <- c(res, compareSpectriPy(x, y, p))
 names(res) <- c("DynLib", "dotproduct", "GNPS", "neutral losses cosine")
+res
 ```
 
 ```{r, results = "asis"}
@@ -550,6 +484,7 @@ p <- NeutralLossesCosine(tolerance = 0.5,
                          ignore_peaks_above_precursor = FALSE)
 res <- c(res, compareSpectriPy(x, y, p))
 names(res) <- c("DynLib", "dotproduct", "GNPS", "neutral losses cosine")
+res
 ```
 
 ```{r, results = "asis"}
@@ -604,6 +539,7 @@ p <- NeutralLossesCosine(tolerance = 0.5,
                          ignore_peaks_above_precursor = FALSE)
 res <- c(res, compareSpectriPy(x, y, p))
 names(res) <- c("DynLib", "dotproduct", "GNPS", "neutral losses cosine")
+res
 ```
 
 ```{r, results = "asis"}
