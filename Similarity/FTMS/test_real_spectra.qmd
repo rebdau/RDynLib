@@ -77,9 +77,23 @@ param <- NeutralLossesCosine(
 )
 res["neutral losses cosine"] <- compareSpectriPy(sps1, sps2, param = param)
 
+# 4. Similarity with gnps
+res["gnps"] <- c(res, compareSpectra(
+                  sps1,
+                  sps2,
+                  ppm = 0,
+                  tolerance = 0.5,
+                  MAPFUN = joinPeaksGnps,
+                  FUN = MsCoreUtils::gnps
+              ))
+
 # Results
 print(res)
 
+
+```
+```{r}
+plotSpectraMirror(sps1, sps2, tolerance = 0.5)
 ```
 
 second example
@@ -137,11 +151,24 @@ param <- NeutralLossesCosine(
   ignore_peaks_above_precursor = TRUE
 )
 res["neutral losses cosine"] <- compareSpectriPy(sps1, sps2, param = param)
-
+# 4. Similarity with gnps
+res["gnps"] <- c(res, compareSpectra(
+                  sps1,
+                  sps2,
+                  ppm = 0,
+                  tolerance = 0.5,
+                  MAPFUN = joinPeaksGnps,
+                  FUN = MsCoreUtils::gnps
+              ))
 # Results
 print(res)
 
 ```
+
+```{r}
+plotSpectraMirror(sps1, sps2, tolerance = 0.5)
+```
+
 
 third example
 ```{r}
@@ -196,10 +223,23 @@ param <- NeutralLossesCosine(
 )
 res["neutral losses cosine"] <- compareSpectriPy(sps1, sps2, param = param)
 
+# 4. Similarity with gnps
+res["gnps"] <- c(res, compareSpectra(
+                  sps1,
+                  sps2,
+                  ppm = 0,
+                  tolerance = 0.5,
+                  MAPFUN = joinPeaksGnps,
+                  FUN = MsCoreUtils::gnps
+              ))
 # Results
 print(res)
 
 ```
+```{r}
+plotSpectraMirror(sps1, sps2, tolerance = 0.5)
+```
+
 
 fourth example
 ```{r}
@@ -254,10 +294,25 @@ param <- NeutralLossesCosine(
 )
 res["neutral losses cosine"] <- compareSpectriPy(sps1, sps2, param = param)
 
+# 4. Similarity with gnps
+res["gnps"] <- c(res, compareSpectra(
+                  sps1,
+                  sps2,
+                  ppm = 0,
+                  tolerance = 0.5,
+                  MAPFUN = joinPeaksGnps,
+                  FUN = MsCoreUtils::gnps
+              ))
 # Results
 print(res)
 
 ```
+```{r}
+plotSpectraMirror(sps1, sps2, tolerance = 0.5)
+```
+
+
+
 As a conclusion all functions return a similar similarity score for those examples
 
 
@@ -274,6 +329,7 @@ m <- dynlib_map(x, y, 200, 210)
 res <- dynlib_symmetric_dotproduct(m$x, m$y)
 res
 ```
+
 
 
 ```{r}
@@ -300,6 +356,10 @@ res
   res <- compareSpectriPy(x, y, param = param)
 res
 ```
+```{r}
+plotSpectraMirror(sps1, sps2, tolerance = 0.5)
+```
+
 
 ```{r}
   x <- DataFrame(precursorMz = 11)
@@ -324,6 +384,11 @@ res
   res <- compareSpectriPy(x, y, param = param)
   res
 ```
+```{r}
+plotSpectraMirror(sps1, sps2, tolerance = 0.5)
+```
+
+
 the  "dynlib_symmetric_dotproduct" takes into accont the common peaks + neutral
 losses, in contrast "NeutralLossesCosine" considers just the neutral losses, 
 That's why we get a low score in the "NeutralLossesCosine" function.
