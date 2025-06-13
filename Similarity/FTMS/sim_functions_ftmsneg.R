@@ -184,9 +184,9 @@ library(BiocParallel)
 library(Spectra)
 
 
-sim_final_final <- function(st_sps, dy_sps, polarity_query,
-                            polarity_target, machine_target,
-                            threshold = 0.8, ppm = 0, tolerance = 0.005) {
+symmetric_dotproduct_combined <- function(st_sps, dy_sps, polarity_query,
+                                          polarity_target, machine_target,
+                                          threshold = 0.8, ppm = 0, tolerance = 0.005) {
   
   library(MetaboAnnotation)
   #Compare just with flax seed's compound that match the following criteria
@@ -196,8 +196,8 @@ sim_final_final <- function(st_sps, dy_sps, polarity_query,
   
   #Compare just with Dynlib's compound that match the following criteria
   
-  dy_filtered <- dy_sps[dy_sps$polarity == polarity_target & 
-                          dy_sps$machine == machine_target & !is.na(dy_sps$name) 
+  dy_filtered <- dy_sps[dy_sps$polarity == polarity_target &
+                          dy_sps$machine == machine_target & !is.na(dy_sps$name)
                         & !(dy_sps$name == "") & !(grepl("^!", dy_sps$name))]
   
   if (length(st_filtered) == 0 || length(dy_filtered) == 0) {
@@ -222,10 +222,23 @@ sim_final_final <- function(st_sps, dy_sps, polarity_query,
     param = param
   )
   
-  # Extraction et filtrage des résultats
+  # Extraction et filtrage initial
   df <- matchedData(matches)
+  df <- as.data.frame(df)  
   df <- df[!is.na(df$score) & df$score >= threshold, ]
   
+  if (nrow(df) == 0) {
+    return(df)
+  }
+  
+  df <- df %>%
+    group_by(acquisitionNum) %>%
+    filter(score == max(score)) %>%
+    filter(matched_peaks_count == max(matched_peaks_count)) %>%
+    slice(1) %>%
+    ungroup()
+  
   return(df)
+  
 }
 
