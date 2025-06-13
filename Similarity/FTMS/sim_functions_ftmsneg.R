@@ -184,7 +184,7 @@ library(BiocParallel)
 library(Spectra)
 
 
-sim_final_final <- function(st_sps, dy_sps, polarity_query,
+symmetric_dotproduct_combined <- function(st_sps, dy_sps, polarity_query,
                             polarity_target, machine_target,
                             threshold = 0.8, ppm = 0, tolerance = 0.005) {
   
