@@ -185,9 +185,9 @@ library(Spectra)
 
 
 symmetric_dotproduct_combined <- function(st_sps, dy_sps, polarity_query,
+
                                           polarity_target, machine_target,
                                           threshold = 0.8, ppm = 0, tolerance = 0.005) {
-  
   library(MetaboAnnotation)
   #Compare just with flax seed's compound that match the following criteria
   st_filtered <- st_sps[st_sps$polarity == polarity_query ]
