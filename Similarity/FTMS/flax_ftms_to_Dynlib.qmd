@@ -1,0 +1,239 @@
+---
+title: "Untitled"
+format: html
+server: shiny
+---
+
+## Shiny Documents
+
+This document represents a workflow for adding ftms flax data as a spectra object
+to Dynlib ftmsneg sqlite database.
+
+We start by importing libraries 
+```{r}
+library(Spectra)
+library(CompoundDb)
+library(RSQLite)
+library(S4Vectors) 
+```
+
+Next we load the flax ftmsneg spectra object
+```{r}
+load("C:/Users/amentag/Desktop/Rcodes/RDynLib_ftms/data/ftms_one_tree.RData")
+```
+
+```{r}
+class(ftms_one_tree)
+```
+
+```{r}
+spectraData(ftms_one_tree)
+```
+
+Here we import the Dynlib sql database and we extract the compDb object from it.
+```{r}
+#this will be the combined database
+con <- dbConnect(RSQLite::SQLite(), "C:/Users/amentag/Desktop/these/These/clones/RDynlib/data/DyLib_FTMS_neg_or.sqlite")
+dbListTables(con)
+#' Load the database as a `CompDb` object
+cdb <- CompDb(con)
+cdb
+```
+
+Next we create an experiment table for flax data in order to add it 
+to experiment table of the Dynlib database
+
+```{r}
+#create an expid starting from the maximum one in experiment table of the Dynlib
+new_exp_id <- max(dbReadTable(con, "experiment")$expid, na.rm = TRUE) + 1
+
+fftmsneg_exp <- data.frame(
+  expid = new_exp_id,
+  date = format(Sys.Date(), "NA"),         
+  user = "NA",                               
+  machine = "FTMS",                           
+  column = "NA",               
+  mstype = "Ftms",                            
+  buffera = "NA",
+  bufferb = "NA",
+  gradient_time = "NA",
+  source = "NA",
+  mode = "neg",                              
+  species = "NA",               
+  tissue = "seed",                              
+  ce = "NA",                                   
+  meta = "NA",                      
+  stringsAsFactors = FALSE
+)
+
+# Insert this line to experiment table
+dbAppendTable(con, "experiment", fftmsneg_exp)
+
+```
+We print the experiment table after insertion
+```{r}
+dbReadTable(con, "experiment")
+```
+
+Next we create a compound dataframe for flax compounds, 
+then we add it to ms_compound table of the Dynlib database.
+
+```{r}
+#Create the nade name 
+n <- length(ftms_one_tree)
+
+if(length(spectraNames(ftms_one_tree)) == 0) {
+  names_vec <- paste0("spec_", seq_len(n))
+} else {
+  names_vec <- spectraNames(ftms_one_tree)
+}
+#Create compounds_df dataframe for flax seed data
+compounds_df <- data.frame(
+  compound_id = paste0("cmp_", seq_len(n)), 
+  nodename = names_vec,
+  name = rep(NA_character_, n),
+  formula = rep(NA_character_, n),
+  mass_measured = precursorMz(ftms_one_tree),
+  exactmass = rep(NA_real_, n),
+  ppm_deviation = rep(NA_real_, n),
+  retention_time = rtime(ftms_one_tree),
+  expid = rep(new_exp_id, n),
+  subsid = rep(NA_integer_, n),
+  conversion = rep(NA_character_, n),
+  wavelen = rep(NA_real_, n),
+  smiles = rep(NA_character_, n),
+  isotope_ratio = rep(NA_real_, n),
+  drift_time = rep(NA_real_, n),
+  composition = rep(NA_character_, n),
+  inchi = rep(NA_character_, n),
+  inchikey = rep(NA_character_, n),
+  stringsAsFactors = FALSE
+)
+
+# Insert with "dbAppendTable()" function
+dbAppendTable(con, "ms_compound", compounds_df)
+
+```
+
+
+```{r}
+#retrieve compound_id from ms_compound table based on the new expid
+compound_map <- dbGetQuery(con, paste0(
+  "SELECT compound_id, nodename FROM ms_compound WHERE expid = ", new_exp_id
+))
+
+```
+
+
+```{r}
+# Create node_name
+names_vec <- paste0("spec_", seq_len(length(ftms_one_tree)))
+
+# Affecting those names to ftms_one_tree data
+spectraNames(ftms_one_tree) <- names_vec
+
+```
+
+
+```{r}
+
+compound_map_df <- as.data.frame(compound_map)
+#Verify that length of ftms values are equal to the number of spectra
+length(compound_map_df$compound_id[match(spectraNames(ftms_one_tree), compound_map_df$nodename)])
+#It should return 1222
+
+# Add compound_id column
+spectraData(ftms_one_tree)$compound_id <- compound_map_df$compound_id[match(spectraNames(ftms_one_tree), compound_map_df$nodename)]
+
+
+```
+
+```{r}
+all(!is.na(ftms_one_tree$compound_id))  # should return TRUE
+
+```
+
+Here we insert spectra of flax ftmsneg to the dynlib CompoundDB object 
+```{r}
+insertSpectra(cdb, ftms_one_tree)
+
+```
+
+
+Verification
+
+```{r}
+# the combined database
+con <- dbConnect(RSQLite::SQLite(), "C:/Users/amentag/Desktop/these/These/clones/RDynlib/data/DyLib_FTMS_neg_or.sqlite")
+dbListTables(con)
+#' Load the database as a `CompDb` object
+cdb <- CompDb(con)
+cdb
+dbReadTable(con, "experiment")
+```
+
+```{r}
+dbGetQuery(con, "
+  SELECT * FROM ms_compound 
+  ORDER BY compound_id DESC 
+  LIMIT 10
+")
+dbGetQuery(con, "
+  SELECT * FROM msms_spectrum_peak 
+  ORDER BY Peak_id DESC 
+  LIMIT 10
+")
+
+dbGetQuery(con, "
+  SELECT * FROM msms_spectrum 
+  ORDER BY spectrum_id DESC 
+  LIMIT 10
+")
+
+dbGetQuery(con, "
+  SELECT * FROM experiment 
+  ORDER BY expid DESC 
+  LIMIT 10
+")
+
+dbGetQuery(con, "
+  SELECT * FROM experiment
+  WHERE expid = (SELECT MAX(expid) FROM experiment)
+")
+
+dbGetQuery(con, "SELECT COUNT(*) AS nb_lignes FROM experiment")
+
+```
+
+
+```{r}
+#Database before 
+con0 <- dbConnect(RSQLite::SQLite(), "C:/Users/amentag/Desktop/copy/data/DyLib_FTMS_neg_or.sqlite")
+dbListTables(con0)
+
+dbGetQuery(con0, "
+  SELECT * FROM ms_compound 
+  ORDER BY compound_id DESC 
+  LIMIT 10
+")
+dbGetQuery(con0, "
+  SELECT * FROM msms_spectrum_peak 
+  ORDER BY Peak_id DESC 
+  LIMIT 10
+")
+dbGetQuery(con0, "
+  SELECT * FROM msms_spectrum 
+  ORDER BY spectrum_id DESC 
+  LIMIT 10
+")
+
+dbGetQuery(con0, "
+  SELECT * FROM experiment
+  WHERE expid = (SELECT MAX(expid) FROM experiment)
+")
+
+dbGetQuery(con0, "SELECT COUNT(*) AS nb_lignes FROM experiment")
+
+
+```
+
