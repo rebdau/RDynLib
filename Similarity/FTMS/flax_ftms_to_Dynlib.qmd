@@ -17,9 +17,10 @@ library(RSQLite)
 library(S4Vectors) 
 ```
 
-Next we load the flax ftmsneg spectra object
+Next we load the flax ftmsneg spectra object that we got from
+the "adding_to_the_RDynlib_library.qmd" file
 ```{r}
-load("C:/Users/amentag/Desktop/Rcodes/RDynLib_ftms/data/ftms_one_tree.RData")
+load("data/ftms_one_tree.RData")
 ```
 
 ```{r}
