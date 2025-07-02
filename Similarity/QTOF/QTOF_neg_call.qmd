@@ -18,7 +18,7 @@ library(CompoundDb)
 First we load the "sim_functions.R" file that contains functions for similarity 
 calculation.
 ```{r}
-source("C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/QTOF/sim_functions_qtofneg.R")
+source("sim_functions_qtofneg.R")
 ```
 
 Here we install the new CompoundDb version
@@ -32,7 +32,7 @@ Next we convert the "DyLib_QTOF_neg2.sqlite" database to a spectra object
 ```{r}
 library(DBI)
 library(RSQLite)
-dbf <- file.path("C:/Users/amentag/Desktop/these/These/clones/RDynlib/data", "DyLib_QTOF_neg2.sqlite")
+dbf <- file.path("data", "DyLib_QTOF_neg.sqlite")
 db <- dbConnect(SQLite(), dbf)
 
 experiment_df <- dbGetQuery(db, "SELECT * FROM experiment")
@@ -53,7 +53,7 @@ dy_sps <- Spectra(cdb)
 
 Here we load the QTOF of flax seed database (it's already a spectra object)  
 ```{r}
-load("C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib_qtof/data/qtof_filtered.RData")
+load("data/qtof_filtered.RData")
 qtof_neg <- qtof_filtered
 spectraData(qtof_neg)
 ```
@@ -64,11 +64,11 @@ negative integuments.
 
 
 ```{r}
-source("C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/QTOF/sim_functions_qtofneg.R")
+source("sim_functions_qtofneg.R")
 result <- sim_final_final(qtof_neg, dy_sps, polarity_query = 0, polarity_target = 0, machine_target = "Synapt", threshold = 0.8)
 #save the result to a .RData object
-save(result, file = "C:/Users/amentag/Desktop/these/These/clones/RDynlib/data/match_results_qtofneg.RData")
-load("C:/Users/amentag/Desktop/these/These/clones/RDynlib/data/match_results_qtofneg.RData")
+save(result, file = "data/match_results_qtofneg.RData")
+load("data/match_results_qtofneg.RData")
 
 print(result)
 ```
