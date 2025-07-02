@@ -28,7 +28,7 @@ We first inspect the data for one of the databases, the *FTMS positive polarity*
 data.
 
 ```{r}
-pth <- "C:/Users/amentag/Desktop/these/Ahlam/these/equip_msdata/database_QTOF_pos/CSV"
+pth <- "data/database_QTOF_pos/CSV"
 dir(pth)
 ```
 
@@ -474,7 +474,7 @@ All tables are created and we can next export/write these to a SQLite database.
 ```{r}
 library(RSQLite)
 
-dbf <- file.path("C:/Users/amentag/Desktop/these/These/clones/RDynlib/data", "DyLib_QTOF_pos.sqlite")
+dbf <- file.path("data", "DyLib_QTOF_pos.sqlite")
 if (file.exists(dbf)) file.remove(dbf)
  con <- dbConnect(SQLite(), dbf) 
  #dbDisconnect(con)
@@ -557,7 +557,7 @@ At last we evaluate whether we can use the created database using the
 library(Spectra)
 library(CompoundDb)
 
-dbf <- file.path("C:/Users/amentag/Desktop/these/These/clones/RDynlib/data", "DyLib_QTOF_pos.sqlite")
+dbf <- file.path("data", "DyLib_QTOF_pos.sqlite")
 
 #' Load the database as a `CompDb` object
 cdb <- CompDb(dbf)
@@ -577,7 +577,7 @@ metadata(cdb) |> head()
 
 
 ```{r}
-con <- dbConnect(RSQLite::SQLite(), "C:/Users/amentag/Desktop/these/These/clones/RDynlib/data/DyLib_QTOF_pos.sqlite")
+con <- dbConnect(RSQLite::SQLite(), "data/DyLib_QTOF_pos.sqlite")
 dbListTables(con)
 
 ```
