@@ -1,6 +1,6 @@
----
+------------------------------------------------------------------------
 
----
+------------------------------------------------------------------------
 
 **The FTMS folder contains the following files :**
 
@@ -13,3 +13,15 @@
 -   "unit_test_ftmsneg" : We used the "testthat" library to do a unit test for the functions in the "sim_functions_ftmsneg.R" file.
 
 -   "flax_ftms_to_Dynlib.qmd" : In this file we added the flax ftms negative data to the sql database of the Dynlib ftms negative.
+
+**The execution order:**
+
+1.  "sim_functions_ftmsneg.R"
+
+2.  "FTMS_neg_call.qmd"
+
+3.  "unit_test_ftmsneg"
+
+4.  "test_real_spectra.qmd"
+
+5.  "flax_ftms_to_Dynlib.qmd"
