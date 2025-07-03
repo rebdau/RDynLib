@@ -1,0 +1,211 @@
+---
+title: "Untitled"
+format: html
+server: shiny
+---
+
+
+
+```{r}
+library(DBI)
+library(RSQLite)
+library(mongolite)
+library(stringi)
+```
+
+Import SQLite databases
+```{r}
+# List of SQLite files
+sqlite_files <- c("data/Dylib_FTMS_neg_or.sqlite", "data/Dylib_FTMS_pos2.sqlite",
+                  "data/Dylib_QTOF_neg.sqlite", "data/Dylib_QTOF_pos.sqlite")
+
+
+```
+
+
+Importing SQLite DB into MongoDB
+```{r}
+
+table_names <- c("experiment", "metadata", "ms_compound",
+                 "msms_spectrum", "msms_spectrum_peak", "synonym")
+
+for (sqlite_file in sqlite_files) {
+  #creates the name of the MongoDB database
+  mongo_db <- gsub(".sqlite$", "", basename(sqlite_file))
+  message("Importing SQLite DB into MongoDB: ", mongo_db)
+  
+  con <- dbConnect(SQLite(), sqlite_file)
+  
+  for (table_name in table_names) {
+    if (table_name %in% dbListTables(con)) {
+      df <- dbReadTable(con, table_name)
+      
+      # Clean UTF-8
+      char_cols <- sapply(df, is.character)
+      for (col_name in names(df)[char_cols]) {
+        df[[col_name]] <- iconv(df[[col_name]], from = "latin1", to = "UTF-8", sub = "")
+      }
+      #Create a mongoDb database with collections as tables of the SQLite 
+      #database
+      mongo_conn <- mongo(collection = table_name, db = mongo_db)
+      # Clean collection
+      mongo_conn$remove('{}')  
+      #Insert rows as document to mongodb database 
+      if (nrow(df) > 0) {
+        mongo_conn$insert(df)
+        message("  Inserted ", nrow(df), " rows into ", table_name)
+      } else {
+        message("  Table ", table_name, " is empty, skipping.")
+      }
+    } else {
+      message("  Table ", table_name, " not found in SQLite.")
+    }
+  }
+  
+  # Create synonym collection
+  mongo_synonym <- mongo(collection = "synonym", db = mongo_db)
+  mongo_synonym$remove('{}')
+  mongo_synonym$insert(list(dummy = "empty_document"))
+  
+  
+  dbDisconnect(con)
+  message("Finished importing ", mongo_db, "\n")
+}
+
+```
+
+Export MongoDB collections en JSON locally
+```{r}
+library(mongolite)
+library(jsonlite)
+
+
+for (sqlite_file in sqlite_files) {
+  #creates the name of the MongoDB database
+  mongo_db <- gsub(".sqlite$", "", basename(sqlite_file))
+  message("Exporting full MongoDB database: ", mongo_db)
+
+  # lists collections name's
+  dummy_conn <- mongo(collection = "experiment", db = mongo_db)
+  collections <- dummy_conn$run('{"listCollections": 1}')$cursor$firstBatch$name
+
+  db_data <- list()
+
+  for (coll_name in collections) {
+    coll <- mongo(collection = coll_name, db = mongo_db)
+    data <- coll$find()
+    db_data[[coll_name]] <- data
+  }
+
+  # Create a single .json file for each database with all collections
+  json_file <- paste0("data/", mongo_db, "_full.json")
+  write_json(db_data, path = json_file, pretty = TRUE, auto_unbox = TRUE)
+  message("Saved full database to: ", json_file, "\n")
+}
+
+
+```
+
+Import json files 
+```{r}
+library(jsonlite)
+
+#import "Dylib_FTMS_neg_or_full.json" 
+db_data <- fromJSON("data/Dylib_FTMS_neg_or_full.json")
+
+# print collections names 
+names(db_data)       
+head(db_data$experiment)
+head(db_data$metadata)
+
+```
+
+Connect to the database (Next time we can just run the following part of
+the code to access to Dynlib database if it is already created)
+
+
+```{r}
+library(mongolite)
+#Connexion to the Dylib_FTMS_neg_or database
+coll <- mongo(collection = "ms_compound", db = "Dylib_FTMS_neg_or")
+data <- coll$find()
+head(data)
+
+# Count the number of document in ms_compound collection
+nb_documents <- coll$count()
+nb_documents 
+```
+
+Here we print the databases names
+```{r}
+
+admin_conn <- mongo(db = "admin", url = "mongodb://localhost")
+
+# get the databases lists
+db_info <- admin_conn$run('{"listDatabases": 1}')
+
+# Databases names
+db_names <- db_info$databases$name
+
+# Affichage
+print(db_names)
+
+
+
+```
+
+
+```{r}
+library(mongolite)
+#Connexion to the Dylib_QTOF_pos database
+qpos <- mongo(collection = "ms_compound", db = "Dylib_QTOF_pos")
+qpos_data <- qpos$find()
+head(qpos_data)
+
+# Count the number of document in ms_compound collection
+doc_count <- qpos$count()
+doc_count
+```
+
+
+```{r}
+library(mongolite)
+#Connexion to the Dylib_FTMS_pos2 database
+fpos <- mongo(collection = "experiment", db = "Dylib_FTMS_pos2")
+fpos_data <- fpos$find()
+head(fpos_data)
+
+# Count the number of document in experiment collection
+fpos_count <- fpos$count()
+fpos_count
+
+# print the document where expid = 66
+result <- fpos$find('{"expid": 18}')
+print(result)
+
+```
+
+```{r}
+library(mongolite)
+#Connexion to the Dylib_FTMS_neg_or database
+fneg <- mongo(collection = "msms_spectrum", db = "Dylib_FTMS_neg_or")
+fneg_data <- fneg$find()
+head(fneg_data)
+
+# Count the number of document in msms_spectrum collection
+doc_count <- fneg$count()
+doc_count
+```
+
+```{r}
+library(mongolite)
+#Connexion to the Dylib_QTOF_neg database
+qneg<- mongo(collection = "msms_spectrum_peak", db = "Dylib_QTOF_neg")
+qneg_data <- qneg$find()
+head(qneg_data)
+
+# Count the number of document in msms_spectrum_peak collection
+doc_count <- qneg$count()
+doc_count
+```
+
