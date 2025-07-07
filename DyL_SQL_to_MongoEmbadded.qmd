@@ -10,7 +10,7 @@ format: html
 server: shiny
 ---
 
-In this quarto document we create 4 embaded Mongodb databases from 4 existing SQL databases, we changed the relationnal based structure of the SQL database into a collection based noSQL database
+In this Quarto document, we create four embedded MongoDB databases from four existing SQL DynLib databases. We transform the relational structure of the SQL databases into a collection-based NoSQL structure.
 
 ```{r}
 library(RSQLite)
