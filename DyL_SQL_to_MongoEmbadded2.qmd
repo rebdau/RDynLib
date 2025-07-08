@@ -1,0 +1,262 @@
+---
+title: "Untitled"
+format: html
+server: shiny
+---
+
+---
+title: "Untitled"
+format: html
+server: shiny
+---
+
+In this Quarto document, we create four embedded MongoDB databases from four existing SQL DynLib databases. We transform the relational structure of the SQL databases into a collection-based NoSQL structure.
+
+```{r}
+library(RSQLite)
+library(mongolite)
+library(jsonlite)
+library(dplyr)
+library(stringi)
+
+```
+
+
+```{r}
+#define SQLite documents
+sqlite_files <- c("data/Dylib_FTMS_neg_or.sqlite", 
+                  "data/Dylib_FTMS_pos2.sqlite",
+                  "data/Dylib_QTOF_neg.sqlite", 
+                  "data/Dylib_QTOF_pos.sqlite")
+
+#giving names for the resulting MongoDb databases
+mongo_dbs <- c("Dylib_FTMS_neg_mongo2", "Dylib_FTMS_pos_mongo2",
+               "Dylib_QTOF_neg_mongo2", "Dylib_QTOF_pos_mongo2")
+
+#giving names for the resulting MongoDb collections
+mongo_collections <- c("coll_FTMS_neg2", "coll_FTMS_pos2", 
+                       "coll_QTOF_neg2", "coll_QTOF_pos2")
+
+```
+
+```{r}
+
+# Cleaning columns
+clean_utf8 <- function(df) {
+  df[] <- lapply(df, function(col) {
+    if (is.character(col)) stri_encode(col, "", "UTF-8") else col
+  })
+  return(df)
+}
+
+```
+
+```{r}
+# Create a folder for saving the resulting json files
+json_dir <- "data/embaded2_json"
+if (!dir.exists(json_dir)) {
+  dir.create(json_dir, recursive = TRUE)
+}
+```
+
+```{r}
+batch_size <- 1000
+
+# Loop on each sqlite file
+for (i in seq_along(sqlite_files)) {
+  sqlite_file <- sqlite_files[i]
+  mongo_db <- mongo_dbs[i]
+  mongo_collection <- mongo_collections[i]
+
+  message("\n Processing ", basename(sqlite_file))
+
+  con <- dbConnect(SQLite(), sqlite_file)
+  #Data Cleaning
+  experiment_tbl <- dbReadTable(con, "experiment") %>% clean_utf8()
+  msms_spectrum_tbl <- dbReadTable(con, "msms_spectrum") %>% clean_utf8()
+  msms_peak_tbl <- dbReadTable(con, "msms_spectrum_peak") %>% clean_utf8()
+  compound_tbl <- dbReadTable(con, "ms_compound") %>% clean_utf8()
+
+  # Import experiment table in a single mongoDB collection
+  mongo_exp <- mongo(collection = "experiment", db = mongo_db)
+  mongo_exp$remove('{}')
+  mongo_exp$insert(experiment_tbl)
+  message("Experiment collection inserted with ", nrow(experiment_tbl), " documents")
+
+  # group by spectrum_id in Peaks table
+  peaks_by_spec <- split(msms_peak_tbl, msms_peak_tbl$spectrum_id)
+  # group by compound_id in ms_compound table
+  compound_by_id <- split(compound_tbl, compound_tbl$compound_id)
+
+    # Documents construction and linking
+  link_docs <- lapply(seq_len(nrow(msms_spectrum_tbl)), function(idx) {
+    spec_row <- as.list(msms_spectrum_tbl[idx, , drop = FALSE])
+    spec_id <- spec_row$spectrum_id
+    cmp_id <- spec_row$compound_id
+  
+    peaks <- peaks_by_spec[[as.character(spec_id)]]
+  if (!is.null(peaks)) {
+    spec_row$peaks <- list(
+    mz = as.numeric(peaks$mz),
+    intensity = as.numeric(peaks$intensity))
+  } else {
+    spec_row$peaks <- list(
+    mz = numeric(),
+    intensity = numeric())
+  }
+  
+  # create compound field in msms_spectrum and fill it by compound information
+  # of each compound id
+    compound <- compound_by_id[[as.character(cmp_id)]]
+    if (!is.null(compound)) {
+      spec_row$compound <- lapply(seq_len(nrow(compound)), function(j) as.list(compound[j, , drop = FALSE]))
+    } else {
+      spec_row$compound <- NULL
+    }
+
+    return(spec_row)
+  })
+
+
+  # Insertion in MongoDB
+  mongo_conn <- mongo(collection = mongo_collection, db = mongo_db)
+  mongo_conn$remove('{}')
+
+  # Save json files locally 
+  output_file <- file.path(json_dir, paste0(tools::file_path_sans_ext(basename(sqlite_file)), ".json"))
+  file_conn <- file(output_file, open = "wt", encoding = "UTF-8")
+  on.exit(close(file_conn), add = TRUE)
+
+  batches <- split(link_docs, ceiling(seq_along(link_docs) / batch_size))
+  for (batch in batches) {
+    json_docs <- vapply(
+      batch,
+      FUN = function(doc) {
+        tryCatch(
+          toJSON(doc, auto_unbox = TRUE, null = "null", POSIXt = "ISO8601", na = "null"),
+          error = function(e) {
+            warning("Invalid JSON: ", conditionMessage(e))
+            NA_character_
+          }
+        )
+      },
+      FUN.VALUE = character(1)
+    )
+
+    valid_docs <- json_docs[!is.na(json_docs)]
+    if (length(valid_docs) > 0) {
+      mongo_conn$insert(valid_docs, parse = TRUE)
+      writeLines(valid_docs, con = file_conn)
+    }
+
+    message(length(valid_docs), " valid documents inserted in this batch")
+    if (any(is.na(json_docs))) {
+      message(sum(is.na(json_docs)), " invalid documents skipped in this batch")
+    }
+  }
+
+  message("MongoDB import done for DB: ", mongo_db, " / Collection: ", mongo_collection)
+  dbDisconnect(con)
+}
+
+
+
+```
+
+**Data Manipulation**
+
+```{r}
+library(mongolite)
+#Connexion to the Dylib_FTMS_neg_or database
+coll <- mongo(collection = "coll_FTMS_neg2", db = "Dylib_FTMS_neg_mongo2")
+data <- coll$find()
+head(data)
+
+```
+
+```{r}
+# Count the number of document in ms_compound collection (201034)
+nb_documents <- coll$count()
+nb_documents 
+```
+
+```{r}
+# Print the first document in compound field
+doc <- coll$find(limit = 1)
+print(doc$compound)
+```
+
+```{r}
+# Print the first document in peaks field
+doc <- coll$find(limit = 1)
+print(doc$peaks)
+
+```
+
+```{r}
+# find the documents where compound.expid field is equal to 18
+result <- coll$find('{"compound.expid": 18}', limit = 4)
+print(result)
+```
+
+```{r}
+library(mongolite)
+#Connexion to the experiment collection of the Dylib_FTMS_neg_or database
+coll_exp <- mongo(collection = "experiment", db = "Dylib_FTMS_neg_mongo2")
+data <- coll_exp$find()
+head(data)
+
+
+```
+
+```{r}
+# Count the number of document in ms_compound collection (265)
+nb_doc_exp <- coll_exp$count()
+nb_doc_exp 
+
+```
+
+```{r}
+# Get the first document
+# Print the first document in experiment collection
+doc_exp <- coll_exp$find(limit = 1)
+print(doc_exp)
+
+```
+
+```{r}
+# find the documents where expid field is equal to 18
+exp18 <- coll_exp$find('{"expid": 18}', limit = 4)
+print(exp18)
+```
+
+```{r}
+#Connexion to the experiment collection of the Dylib_FTMS_neg_or database
+coll_qpos <- mongo(collection = "coll_QTOF_pos2", db = "Dylib_QTOF_pos_mongo2")
+data <- coll_qpos$find()
+head(data)
+```
+
+```{r}
+# Print the first document in compound field
+doc_qpos <- coll_qpos$find(limit = 1)
+print(doc_qpos$compound)
+```
+
+```{r}
+# Count the number of document in ms_compound collection (6237)
+nb_doc_qpos <- coll_qpos$count()
+nb_doc_qpos 
+```
+
+```{r}
+# Print the first document in peaks field
+doc_pk_qpos <- coll_qpos$find(limit = 1)
+print(doc_pk_qpos$peaks)
+```
+
+```{r}
+# Print the first document in compound field
+doc_cmp_qpos <- coll_qpos$find(limit = 1)
+print(doc_cmp_qpos$compound)
+```
