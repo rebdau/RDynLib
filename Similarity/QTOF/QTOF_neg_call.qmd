@@ -71,10 +71,11 @@ save(result, file = "data/match_results_qtofneg.RData")
 load("data/match_results_qtofneg.RData")
 
 print(result)
+nrow(result)
 ```
 
 
-the resulting table has 20 rows.
+the resulting table has 23 rows.
 
 
 
