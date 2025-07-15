@@ -21,7 +21,8 @@ library(stringi)
 library(DBI)
 library(janitor)
 library(microbenchmark)
-
+pth <- getwd()
+pth
 
 ```
 
@@ -271,10 +272,10 @@ First, we compare the time performance of a simple query that extracts documents
 spectrum_ids <- c(1, 5, 8)
 
 # SQLite connection
-sqlite_con <- dbConnect(RSQLite::SQLite(), "data/Dylib_FTMS_neg_or.sqlite")
+sqlite_con <- dbConnect(RSQLite::SQLite(), "data/DyLib_QTOF_neg.sqlite")
 
 # MongoDB connection
-mongo_con <- mongo(collection = "coll_FTMS_neg", db = "Dylib_FTMS_neg_mongo")
+mongo_con <- mongo(collection = "coll_QTOF_neg", db = "Dylib_QTOF_neg_mongo")
 
 # SQLite extraction function
 get_from_sqlite <- function(ids) {
@@ -324,10 +325,10 @@ Next we use another query to extract peaks with an intensity greater than 100 fo
 spectrum_ids <- c(1, 5, 8)
 
 # SQLite connection
-sqlite_con <- dbConnect(RSQLite::SQLite(), "data/Dylib_FTMS_neg_or.sqlite")
+sqlite_con <- dbConnect(RSQLite::SQLite(), "data/DyLib_QTOF_neg.sqlite")
 
 # MongoDB connection
-mongo_con <- mongo(collection = "coll_FTMS_neg", db = "Dylib_FTMS_neg_mongo")
+mongo_con <- mongo(collection = "coll_QTOF_neg", db = "Dylib_QTOF_neg_mongo")
 
 # SQLite retrieval function
 get_from_sqlite <- function(ids) {
@@ -389,8 +390,8 @@ library(microbenchmark)
 library(dplyr)
 
 # CONNECTIONS 
-sqlite_con <- dbConnect(SQLite(), "data/Dylib_FTMS_neg_or.sqlite")
-mongo_con <- mongo(collection = "coll_FTMS_neg", db = "Dylib_FTMS_neg_mongo")
+sqlite_con <- dbConnect(SQLite(), "data/DyLib_QTOF_neg.sqlite")
+mongo_con <- mongo(collection = "coll_QTOF_neg", db = "Dylib_QTOF_neg_mongo")
 
 # RETRIEVE 1000 SPECTRUM IDs FROM SQLITE 
 spectrum_ids <- dbGetQuery(sqlite_con, "SELECT DISTINCT spectrum_id FROM msms_spectrum_peak LIMIT 10000")$spectrum_id
@@ -438,14 +439,14 @@ boxplot(benchmark_result, main = "SQLite vs MongoDB (Filtered Peaks)", ylab = "T
 
 ```
 
-also SQL performs well than MongoDB
+MongoDB here is faster than SQL
 
 In this script we select rows/documents with an mz between 100 and 200 and intensity \> 5000
 
 ```{r}
 #CONNECTIONS
-sqlite_con <- dbConnect(SQLite(), "data/Dylib_FTMS_neg_or.sqlite")
-mongo_con <- mongo(collection = "coll_FTMS_neg", db = "Dylib_FTMS_neg_mongo")
+sqlite_con <- dbConnect(SQLite(), "data/DyLib_QTOF_neg.sqlite")
+mongo_con <- mongo(collection = "coll_QTOF_neg", db = "Dylib_QTOF_neg_mongo")
 
 # CREATE COMPOUND MULTIKEY INDEX ON MONGODB 
 # This index helps MongoDB quickly find peaks matching both mz and intensity criteria
@@ -503,7 +504,7 @@ boxplot(benchmark_result, main = "SQLite vs MongoDB (Filtered Peaks mz 100-200, 
 
 ```
 
-The benchmark results show that SQL is faster than mongoDB.
+The benchmark results show that mongodb is faster than SQL.
 
 Here we just changed the filtering criteria to return fewer peaks by selecting rows/documents that have mz between 200 and 210 and intensity \> 10000
 
@@ -514,8 +515,8 @@ library(mongolite)
 library(microbenchmark)
 
 # Connections
-sqlite_con <- dbConnect(SQLite(), "data/Dylib_FTMS_neg_or.sqlite")
-mongo_con <- mongo(collection = "coll_FTMS_neg", db = "Dylib_FTMS_neg_mongo")
+sqlite_con <- dbConnect(SQLite(), "data/DyLib_QTOF_neg.sqlite")
+mongo_con <- mongo(collection = "coll_QTOF_neg", db = "Dylib_QTOF_neg_mongo")
 
 # Create compound multikey index in MongoDB for peaks.mz and peaks.intensity
 mongo_con$index(add = '{"peaks.mz": 1, "peaks.intensity": 1}')
@@ -572,7 +573,7 @@ boxplot(benchmark_result, main = "SQLite vs MongoDB: Peaks mz 200-210 & intensit
 
 ```
 
-for the first time MongoDB is faster than SQLite in this benchmark, As a result mongoDB can outperform SQL for highly selective queries on deeply nested data.
+Also MongoDB is faster than SQLite in this benchmark, As a result mongoDB can outperform SQL for highly selective queries on deeply nested data.
 
 Here we group by spectrum_id and we select peaks where mz is greater or equal than 3000 and intensity is greater than 10000
 
