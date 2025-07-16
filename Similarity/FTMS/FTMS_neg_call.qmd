@@ -11,6 +11,9 @@ for similarity calculation between FTMS data and the RDynLib FTMS database.
 ```{r}
 library(Spectra)
 library(CompoundDb)
+pth <- getwd()
+pth
+setwd(pth)
 ```
 
 
@@ -31,7 +34,7 @@ Next we convert the "Dynlib_FTMS_neg.sqlite" database to a spectra object
 ```{r}
 library(DBI)
 library(RSQLite)
-dbf <- file.path("/data", "DyLib_FTMS_neg2.sqlite")
+dbf <- file.path(pth,"/data", "DyLib_FTMS_neg_or.sqlite")
 db <- dbConnect(SQLite(), dbf)
 
 experiment_df <- dbGetQuery(db, "SELECT * FROM experiment")
@@ -73,7 +76,7 @@ print(result)
 ```
 
 
-the resulting table has 1765 rows, that's mean we have 974 matches with the 
+the resulting table has 111 rows, that's mean we have 111 matches with the 
 two databases
 
 
