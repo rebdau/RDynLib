@@ -12,6 +12,8 @@ negative database.
 ```{r}
 library(Spectra)
 library(CompoundDb)
+pth <- getwd()
+pth
 ```
 
 
@@ -53,7 +55,7 @@ dy_sps <- Spectra(cdb)
 
 Here we load the QTOF of flax seed database (it's already a spectra object)  
 ```{r}
-load("data/qtof_filtered.RData")
+load("/data/qtof_filtered.RData")
 qtof_neg <- qtof_filtered
 spectraData(qtof_neg)
 ```
@@ -75,7 +77,7 @@ nrow(result)
 ```
 
 
-the resulting table has 23 rows.
+the resulting table has 23 rows, which means 23 matches
 
 
 
