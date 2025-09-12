@@ -53,9 +53,16 @@ cdb <- CompDb(dbf)
 dy_sps <- Spectra(cdb)
 ```
 
+
+```{r}
+spectraData(dy_sps)
+```
+
+
+
 Here we load the FTMS of flax seed database (it's already a spectra object)  
 ```{r}
-load("data/ftms_one_tree.RData")
+load("data/ftms_unique_tree.RData")
 ft_neg <- ftms_one_tree
 spectraData(ft_neg)
 ```
@@ -66,33 +73,19 @@ negative integuments.
 
 
 ```{r}
-source("sim_functions_with_options.R")
 result <- symmetric_dotproduct_combined(ft_neg, dy_sps, polarity_query = 0, polarity_target = 0, machine_target = "FTMS", threshold = 0.8)
 #save the result to a .RData object
-save(result, file = "data/match_results_ftneg2_corr.RData")
-load("data/match_results_ftneg2_corr.RData")
+save(result, file = "data/match_DyFtms_neg.RData")
+load("data/match_DyFtms_neg.RData")
 
 print(result)
 ```
 
 
-the resulting table has 111 rows, that's mean we have 111 matches with the 
-two databases
+the resulting table has `r nrow(result)` rows, so in this comparison there is 
+`r nrow(result)` matches
 
 
 
-```{r}
-sp1 <- ft_neg[spectraData(ft_neg)$scanIndex == 2564]
-mz(sp1)
-intensity(sp1)
-precursorMz(sp1)
-sp3 <- dy_sps[spectraData(dy_sps)$acquisitionNum == 146494]
-mz(sp3)
-intensity(sp3)
-precursorMz(sp3)
-#plotSpectraMirror(sp1, sp3)
-```
 
-
-`
 
