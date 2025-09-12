@@ -184,27 +184,28 @@ library(BiocParallel)
 library(Spectra)
 
 
-symmetric_dotproduct_combined <- function(st_sps, dy_sps, polarity_query,
 
+symmetric_dotproduct_combined <- function(st_sps, dy_sps, polarity_query,
                                           polarity_target, machine_target,
                                           threshold = 0.8, ppm = 0, tolerance = 0.005) {
   library(MetaboAnnotation)
-  #Compare just with flax seed's compound that match the following criteria
-  st_filtered <- st_sps[st_sps$polarity == polarity_query ]
+  library(dplyr)
   
-  #st_filtered$precursorMz[st_filtered$msLevel %in% c(3, 4, 5)] <- round_perl(st_filtered$precursorMz[st_filtered$msLevel %in% c(3, 4, 5)])
-  
-  #Compare just with Dynlib's compound that match the following criteria
-  
-  dy_filtered <- dy_sps[dy_sps$polarity == polarity_target &
-                          dy_sps$machine == machine_target & !is.na(dy_sps$name)
-                        & !(dy_sps$name == "") & !(grepl("^!", dy_sps$name))]
+  # Filtrage des spectres
+  st_filtered <- st_sps[st_sps$polarity == polarity_query]
+  dy_filtered <- dy_sps[
+    dy_sps$polarity == polarity_target &
+      dy_sps$machine == machine_target &
+      !is.na(dy_sps$name) &
+      dy_sps$name != "" &
+      !grepl("^!", dy_sps$name)
+  ]
   
   if (length(st_filtered) == 0 || length(dy_filtered) == 0) {
     return(data.frame())
   }
   
-  # Paramètres de comparaison
+  
   param <- CompareSpectraParam(
     ppm = ppm,
     tolerance = tolerance,
@@ -212,33 +213,32 @@ symmetric_dotproduct_combined <- function(st_sps, dy_sps, polarity_query,
     requirePrecursor = TRUE,
     MAPFUN = dynlib_map,
     FUN = dynlib_symmetric_dotproduct,
-    matchedPeaksCount  = TRUE
+    matchedPeaksCount = TRUE
   )
   
-  # Calcul de similarité
-  matches <- matchSpectra(
-    query = st_filtered,
-    target = dy_filtered,
-    param = param
-  )
+
+  matches <- matchSpectra(query = st_filtered, target = dy_filtered, param = param)
   
-  # Extraction et filtrage initial
+  
   df <- matchedData(matches)
-  df <- as.data.frame(df)  
-  df <- df[!is.na(df$score) & df$score >= threshold, ]
-  
-  if (nrow(df) == 0) {
-    return(df)
+  df <- as.data.frame(df)
+  for (col in names(df)) {
+    if (inherits(df[[col]], "Rle")) {
+      df[[col]] <- as.vector(df[[col]])
+    }
   }
   
+
+  df <- df[!is.na(df$score) & df$score >= threshold, ]
+  if (nrow(df) == 0) return(df)
+  
+
   df <- df %>%
     group_by(acquisitionNum) %>%
-    filter(score == max(score)) %>%
-    filter(matched_peaks_count == max(matched_peaks_count)) %>%
-    slice(1) %>%
+    slice_max(order_by = score, n = 1, with_ties = TRUE) %>%
+    slice_max(order_by = matched_peaks_count, n = 1, with_ties = FALSE) %>%
     ungroup()
   
   return(df)
-  
 }
 
