@@ -67,13 +67,13 @@ negative integuments and flax seed ftms negative MS/MS assembled spectrum.
 
 ```{r}
 source("sim_functions_qtofneg.R")
-result <- sim_final_final(ftms_assembled, dy_sps, polarity_query = 0, polarity_target = 0, machine_target = "Synapt", threshold = 0.8)
+result1 <- sim_final_final(ftms_assembled, dy_sps, polarity_query = 0, polarity_target = 0, machine_target = "Synapt", threshold = 0.8)
 #save the result to a .RData object
-save(result, file = "data/match_assembled_ftms.RData")
+save(result1, file = "data/match_assembled_ftms.RData")
 load("data/match_assembled_ftms.RData")
 
-print(result)
-nrow(result)
+print(result1)
+nrow(result1)
 ```
 
 
