@@ -15,12 +15,14 @@ library(Spectra)
 library(CompoundDb)
 library(RSQLite)
 library(S4Vectors) 
+pth <- getwd()
+pth
 ```
 
 Next we load the flax ftmsneg spectra object that we got from
 the "adding_to_the_RDynlib_library.qmd" file
 ```{r}
-load("data/ftms_one_tree.RData")
+load("data/ftms_unique_tree.RData")
 ```
 
 ```{r}
@@ -34,7 +36,7 @@ spectraData(ftms_one_tree)
 Here we import the Dynlib sql database and we extract the compDb object from it.
 ```{r}
 #this will be the combined database
-con <- dbConnect(RSQLite::SQLite(), "C:/Users/amentag/Desktop/copy/data/DyLib_FTMS_neg_or2.sqlite")
+con <- dbConnect(RSQLite::SQLite(), "data/DyLib_FTMS_flax_neg.sqlite")
 dbListTables(con)
 #' Load the database as a `CompDb` object
 cdb <- CompDb(con)
@@ -178,7 +180,7 @@ Verification
 
 ```{r}
 # the combined database
-con <- dbConnect(RSQLite::SQLite(), "C:/Users/amentag/Desktop/copy/data/DyLib_FTMS_neg_or2.sqlite")
+con <- dbConnect(RSQLite::SQLite(), "data/DyLib_FTMS_flax_neg.sqlite")
 dbListTables(con)
 #' Load the database as a `CompDb` object
 cdb <- CompDb(con)
@@ -217,6 +219,8 @@ dbGetQuery(con, "
 
 dbGetQuery(con, "SELECT COUNT(*) AS nb_lignes FROM experiment")
 
+dbGetQuery(con, "SELECT COUNT(*) AS nb_lignes FROM ms_compound")
+
 dbGetQuery(con, "SELECT * FROM ms_compound WHERE expid = 266")
 
 dbGetQuery(con, "
@@ -232,7 +236,7 @@ WHERE CAST(compound_id AS INTEGER) = (
 
 ```{r}
 #Database before 
-con0 <- dbConnect(RSQLite::SQLite(), "C:/Users/amentag/Desktop/copy/data/DyLib_FTMS_neg_or.sqlite")
+con0 <- dbConnect(RSQLite::SQLite(), "C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/data/DyLib_FTMS_neg_or.sqlite")
 dbListTables(con0)
 
 dbGetQuery(con0, "
