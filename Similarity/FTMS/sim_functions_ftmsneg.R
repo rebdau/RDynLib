@@ -2,7 +2,7 @@ library(Spectra)
 
 
 neutral_loss <- function(mz_values, precursorMz) {
-  round(precursorMz) - mz_values
+  round_perl(precursorMz) - mz_values
 }
 
 round_perl <- function(number) {
