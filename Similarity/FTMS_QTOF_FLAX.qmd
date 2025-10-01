@@ -1,0 +1,70 @@
+---
+title: "Untitled"
+format: html
+server: shiny
+---
+
+In this quarto document we call the "sim_functions_qtofneg.R" file code to use 
+functions for similarity calculation between QTOF data and the RDynLib QTOF 
+negative database.
+
+
+```{r}
+library(Spectra)
+library(CompoundDb)
+setwd("C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity")
+pth <- getwd()
+pth
+```
+
+
+First we load the "sim_functions.R" file that contains functions for similarity 
+calculation.
+```{r}
+source("sim_functions_qtof_ftms.R")
+```
+
+Here we install the new CompoundDb version
+```{r}
+#BiocManager::install("RforMassSpectrometry/CompoundDb", ref = "jomain", force = TRUE)
+```
+
+
+
+```{r}
+load("data/ftms_assembled.RData")
+ftms_MS2 <- ftms_assembled
+spectraData(ftms_MS2)
+```
+
+
+Here we load the QTOF of flax seed database (it's already a spectra object)  
+```{r}
+load("data/ms2_qtof.RData")
+qtof_neg <- ms2_qtof
+spectraData(qtof_neg)
+```
+
+
+Next we calculate the similarity score between the dynlib and flax seed QTOF
+negative integuments.
+
+
+```{r}
+#source("sim_functions_qtofneg.R")
+result <- sim_final_final(qtof_neg, ftms_MS2, polarity_query = 0, polarity_target = 0, threshold = 0.8)
+#save the result to a .RData object
+save(result, file = "data/match_qtof_ftms_flax.RData")
+load("data/match_qtof_ftms_flax.RData")
+
+print(result)
+nrow(result)
+```
+
+
+the resulting table has 16 rows, which means 16 matches
+
+
+
+`
+
