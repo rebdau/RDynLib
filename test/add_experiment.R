@@ -20,6 +20,7 @@ msdata <- readMSData(files = fls, mode = "onDisk")
 #Filter functions to be applied on MSnExp object: filterRT(), filterMsLevel(), filterPrecursorMz(), filterFile, ...
 ##...see for more filters later
 msdata.filtered <- 
+sps <- msdata %>% filterFile(file=1) %>% filterRt(rt=c(180,181)
 
 #Create dataframe with spectra from filtered MSnExp:
 #create list of Spectrum objects from filtered (reduced) MSnExp object 
@@ -29,6 +30,7 @@ setBackend(,MsBackendDataFrame())
 #OR extract spectra data as dataframe with spectraData()
 spectraData(object, columns = spectraVariables(object))
 
+spc <- spectra(sps)
 
 
 #Create a compound_id (DYNLIB0000000001) for each feature for which spectra were extracted
