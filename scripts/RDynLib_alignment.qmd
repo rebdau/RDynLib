@@ -1,0 +1,132 @@
+---
+title: "RDynLib_alignment"
+author: "Rebecca Dauwe"
+format: html
+tbl-cap-location: bottom
+editor: Source
+date: 'Compiled: `r format(Sys.Date(), "%B %d, %Y")`'
+---
+
+```{r setup, include=FALSE}
+# Prevent R Notebook from resetting working directory at end of chunks
+knitr::opts_knit$set(root.dir = getwd())
+
+```
+
+## Introduction
+
+In this document, we upload the existing DynLib library and RDynLib package and align DynLib subdatabases
+
+Functions: (1) `Aligning_General()`:
+
+Core function that actually performs the alignment between one FT experiment and one QTOF experiment.
+
+Works at the data frame level, manipulating FT (ft) and QTOF (syn) peaks.
+
+Key operations inside:
+
+-   Select FT and QTOF subdb from finlist.
+
+-   Filter each subdb by expnr.ft / expnr.syn.
+
+-   Sort FT peaks by retention time (`order(ft.exp[[1]])`).
+
+-   Pick a central peak (COMPID) for regression or local shortlist.
+
+Call helper functions:
+
+-   `Make_loc_shortlist()` create shortlist of FT peaks.
+
+-   `Remov_empties()` remove unmatched peaks.
+
+-   `Calign()` perform local alignment between FT and QTOF peaks.
+
+
+-    Apply ESI-mode adjustments if necessary.
+
+-    Return aligned table LCal of matched peaks (FT ↔ QTOF).
+
+Input:
+
+expnr.ft, expnr.syn (expid numbers)
+
+finlist (list of FT and QTOF spectra)
+
+Optional parameters: err, t.ini, chrg, ESImode
+
+Output:
+
+LCal: a data frame of aligned FT–QTOF peaks.
+
+
+
+(2) `Aligning_FT_QTOF()`
+
+wrapper function that manages the full alignment workflow for a specific FT run, including interactive steps.
+
+Handles user input, association tables, filtering, outlier removal, regression, and plotting.
+
+Validate that expnr.ft exists in DynLib.
+
+Load / initialize Assoc table (for negative or positive mode).
+
+Find candidate QTOF experiment(s) corresponding to the FT experiment.
+
+Prompt the user to select the QTOF experiment.
+
+Call Aligning_General to generate LCal (aligned peaks).
+
+Refine matches using:
+
+-   matchFTSyn: filter matches based on minIon.
+
+-   RemoveOutliers: remove peaks outside RT deviation range.
+
+Fit RT regression: RegressionPie_LCalign and PlotPie_LCalign (for QC visualization).
+
+Prompt the user to confirm writing connections to the association table.
+
+If confirmed, call `FillAssocFTnQTOFn`: update Assoc with aligned FT - QTOF links.
+
+Return updated Assoc table.
+
+Input:
+
+expnr.ft, finlist
+
+Optional: err, t.ini, lc.err, rng, startpoint, cutoff, minIon, Assoc
+
+Output:
+
+Assoc table (updated with aligned peaks)
+
+
+```{r}
+#| message: false
+
+#' Load required libraries
+library(devtools)
+
+```
+## Uploading DynLib
+
+
+
+```{r}
+load_all()
+base.dir <- getwd()
+
+finlist <- Get_All_DynLib_files(base.dir)
+```
+
+The function `Aligning_FT_QTOF()` aligns one FT (Orbitrap / FT) experiment (expnr.ft) with a QTOF (Synapt/QTOF) experiment and (optionally) adds connections into an association table.
+
+```{r}
+expnr.ft <- 191
+expnr.syn <- 38
+LCal <- Aligning_General(expnr.ft, expnr.syn, err=0.02, t.ini=5, finlist)
+Assoc <- Aligning_FT_QTOF(expnr.ft, finlist)
+
+```
+
+

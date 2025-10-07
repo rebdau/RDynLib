@@ -2,10 +2,6 @@
 .Rhistory
 .RData
 RDynLib.Rproj
-Rlibrary/
-database_FTMS_neg/
-database_FTMS_pos/
-database_QTOF_neg/
-database_QTOF_pos/
-test/flaxseed_FTneg/
-DynLib subDB alignment/
+test/
+inst/
+
