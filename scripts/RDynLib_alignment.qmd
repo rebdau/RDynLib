@@ -44,7 +44,7 @@ Call helper functions:
 
 -    Apply ESI-mode adjustments if necessary.
 
--    Return aligned table LCal of matched peaks (FT ↔ QTOF).
+-    Return aligned table LCal of matched peaks (FT - QTOF).
 
 Input:
 
@@ -107,17 +107,85 @@ Assoc table (updated with aligned peaks)
 #' Load required libraries
 library(devtools)
 
+#` Uploading RDynLib: Load all functions of the RDynlib directory
+load_all()
 ```
+
+
 ## Uploading DynLib
 
-
-
 ```{r}
-load_all()
-base.dir <- getwd()
-
+# Hard-coded base path (adjust as needed)
+base.dir <- "D:/RDynLib/inst"
 finlist <- Get_All_DynLib_files(base.dir)
 ```
+
+## Local Retention Time Alignment with `LCalign`
+
+The `LCalign` function performs **local retention time alignment** between FT and QTOF chromatograms.
+
+- It takes `t.ini = 5` neighboring FT peaks (by default) and computes **all possible retention differences** between each of these 5 FT m/z values and all possible isomeric QTOF m/z values.
+- For **each combination of 5 FT–QTOF pairs**, the **standard deviation of retention time differences** is calculated.
+- The combination that **yields the lowest standard deviation** is selected, and the 5 FT–QTOF pairs are added to a **final list (`res.F`)**.
+- The local sequence of 5 FT peaks is then shifted **one peak to the right**, and the procedure repeats.
+
+### Multiple Contributions of FT Peaks
+
+- Each FT peak participates in **five overlapping local sequences** (first as the fifth peak, then fourth, etc.), so each FT peak contributes **five FT–QTOF pairs** to `res.F`.
+- If a particular FT peak is consistently associated with the **same QTOF isomer** across these sequences, this provides **strong support** for the correct FT–QTOF association.
+- If the same FT peak pairs with different QTOF isomers in different sequences, the subsequent regression may be **slightly biased**.
+
+Example:
+
+- Consider a sequence of 7 neighboring FT peaks where the **fourth peak** has two possible QTOF isomers:
+  - The first three FT peaks differ by 0.5 min from their QTOF partners -> the algorithm selects the first isomer for the fourth peak to minimize SD.
+  - The last three FT peaks differ by 1 min -> the second QTOF isomer is selected for the fourth FT peak.
+
+This overlapping selection mechanism can be seen as a **weighing effect**:
+
+- Multiple contributions of each FT peak to `res.F` reduce bias compared to using **only one single association**, which could be a false positive.
+- Note: the **first and last few FT peaks** cannot contribute five times and therefore have less impact on the regression.
+
+### Handling Single QTOF Isomers and False Positives
+
+- If **only one QTOF isomer** is present for a given FT peak, it will be selected.
+- If this association is incorrect, it creates a **false positive**, which will appear prominently in `res.F` but is expected to **deviate randomly** from the final regression.
+- At least one QTOF isomer is always present due to the prior application of the `Remov_empties` function.
+
+### Usage Note
+
+The `LCalign` function **closely interacts with `Differ_of_retdif`**, which calculates differences of retention times. Together, these functions ensure that **local alignment** is robust, accounts for overlapping sequences, and reduces bias in the regression of retention times.
+
+## Example: Running `LCalign` on FT/QTOF Data
+`expnr.ft` and `expnr.syn` correspond to the FT and QTOF experiment numbers you want to align.
+`err` specifies the allowed retention time error window (in minutes).
+`t.ini`determines how many neighboring FT peaks are used in each local alignment window.
+`LCal` contains the aligned FT–QTOF pairs in a data frame ready for downstream regression or plotting.
+```{r}
+# Make sure your finlist is already loaded
+# e.g., finlist <- Get_All_DynLib_files(base.dir)
+
+# Select example experiment numbers (adjust as needed)
+expnr.ft <- 191
+expnr.syn <- 38
+
+# Optional parameters
+err <- 0.02
+t.ini <- 5
+ESImode <- NULL
+chrg <- NULL
+
+# Run local retention time alignment
+LCal <- Aligning_General(expnr.ft, expnr.syn, err = err, t.ini = t.ini,
+                         finlist = finlist, ESImode = ESImode, chrg = chrg)
+
+# Inspect first few aligned FT–QTOF pairs
+head(LCal)
+
+
+
+The function `Aligning_General()` does the actual alignment between two subdatabases.
+
 
 The function `Aligning_FT_QTOF()` aligns one FT (Orbitrap / FT) experiment (expnr.ft) with a QTOF (Synapt/QTOF) experiment and (optionally) adds connections into an association table.
 
