@@ -3,5 +3,4 @@
 .RData
 RDynLib.Rproj
 test/
-inst/
 
