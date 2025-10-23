@@ -59,7 +59,7 @@ num_one_peak_spectra_ftms
 Here we load the QTOF of flax seed database (it's already a spectra object)  
 ```{r}
 load("data/ms2_qtof_sep.RData")
-qtof_neg <- ms2_qtof_ftdda
+qtof_neg <- ms2_qtof_sep
 spectraData(qtof_neg)
 ```
 ```{r}
@@ -87,15 +87,39 @@ res_dda2 <- sim_final_final(qtof_neg, ftms_MS2, collision_energy_qtof = "DDA2", 
 res_dda3 <- sim_final_final(qtof_neg, ftms_MS2, collision_energy_qtof = "DDA3", threshold = 0.8)
 
 #Combine all the similarity results into one dataframe
-DDA_combined <- rbind(result_DDA1, result_DDA2, result_DDA3)
+DDA_combined <- rbind(res_dda1, res_dda2, res_dda3)
 #save the result to a .RData object
-save(DDA_combined, file = "data/DDA1_DDA2_DDA3.RData")
+#save(DDA_combined, file = "data/DDA1_DDA2_DDA3.RData")
 
 
 res_dda1 
 res_dda2
 res_dda3
+
+nrow(DDA_combined)
 ```
+
+
+```{r}
+head(as.data.frame(DDA_combined)[, 
+     c("target_dataOrigin", "dataOrigin", "score", 
+       "matched_peaks_count", "target_feature_id", "feature_id")], 3)
+
+```
+
+
+```{r}
+idx <- which(spectraData(qtof_neg)$feature_id == "FT03894" & spectraData(qtof_neg)$dataOrigin == "C:\\Users\\amentag\\Desktop\\these\\These\\clones\\new_clones\\RDynLib_qtof\\data\\mzML_cent1\\S1Rbneg-DDA1.mzML")
+peaksData(qtof_neg)[[idx]]
+spectraData(qtof_neg)$precursorMz[[idx]]
+```
+
+```{r}
+idx2 <- which(spectraData(ftms_MS2)$feature_id == "FT1783" & spectraData(ftms_MS2)$dataOrigin == "C:\\Users\\amentag\\Desktop\\Rcodes\\RDynLib_ftms\\data\\mzML\\S1R2.mzML")
+peaksData(ftms_MS2)[[idx2]]
+spectraData(ftms_MS2)$precursorMz[[idx2]]
+```
+
 
 The list of features that hit for each collision energy
 
