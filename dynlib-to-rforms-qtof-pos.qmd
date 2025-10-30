@@ -613,7 +613,7 @@ dbExecute(con, "
   CREATE TABLE IF NOT EXISTS feature_matrix (
     nodename TEXT,
     dataOrigin TEXT,
-    value REAL,
+    Value REAL,
     expid INTEGER,
     FOREIGN KEY (expid) REFERENCES experiment(expid)
   );
