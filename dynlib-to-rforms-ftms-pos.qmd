@@ -623,6 +623,91 @@ tmp <- dbExecute(
 dbDisconnect(con)
 ```
 	
+
+#Add feature matrix to the sql databases
+
+```{r}
+library(data.table)
+library(stringr)
+
+base_path <- "data/database_FTMS_pos/Experimenten"
+exp_dirs <- list.dirs(base_path, full.names = TRUE, recursive = FALSE)
+
+read_and_process <- function(dir) {
+  nodes_file <- file.path(dir, "nodes.txt")
+  if (!file.exists(nodes_file)) return(NULL)
+
+  expid <- as.integer(str_extract(basename(dir), "(?<=Exp)\\d+"))
+
+  dt <- fread(nodes_file, sep = "\t", header = TRUE, strip.white = TRUE, check.names = TRUE)
+
+  # Remove columns that are entirely empty / NA
+  dt <- dt[, which(colSums(!is.na(dt) & dt != "" & dt != "NULL") > 0), with = FALSE]
+
+  # Standardize the feature name column
+  name_col <- grep("name", names(dt), ignore.case = TRUE, value = TRUE)[1]
+  setnames(dt, old = name_col, new = "node_name", skip_absent = TRUE)
+
+  # identify where data starts
+  node_col_index <- which(names(dt) == "node_name")
+
+  # Candidate columns = all columns to the right
+  candidate_cols <- names(dt)[(node_col_index + 1):ncol(dt)]
+
+  # keep only columns that contain at least 1 numeric value
+  data_origin_cols <- candidate_cols[
+    sapply(candidate_cols, function(col) any(suppressWarnings(!is.na(as.numeric(dt[[col]])))))
+  ]
+
+  # to long format
+  dt_long <- melt(
+    dt,
+    id.vars = "node_name",
+    measure.vars = data_origin_cols,
+    variable.name = "dataOrigin",
+    value.name = "value"
+  )
+
+  dt_long[, expid := expid]
+
+  return(dt_long)
+}
+
+nodes_long <- rbindlist(lapply(exp_dirs, read_and_process), use.names = TRUE, fill = TRUE)
+
+nodes_long
+
+
+
+```
+
+
+
+```{r}
+dbExecute(con, "
+  CREATE TABLE IF NOT EXISTS feature_matrix (
+    node_name TEXT,
+    dataOrigin TEXT,
+    Value REAL,
+    expid INTEGER,
+    FOREIGN KEY (expid) REFERENCES experiment(expid)
+  );
+")
+```
+```{r}
+dbWriteTable(con, "feature_matrix", nodes_long, append = TRUE, row.names = FALSE)
+```
+
+
+```{r}
+dbGetQuery(con, "Select * from feature_matrix LIMIT 10")
+```
+
+
+
+
+
+
 ## Testing the created database
 
 At last we evaluate whether we can use the created database using the
@@ -658,7 +743,6 @@ dbListTables(con)
 
 ```{r}
 dbReadTable(con, "ms_compound")
-
 ```
 
 ```{r}
@@ -708,22 +792,30 @@ dbReadTable(con, "msms_spectrum")
 Get access to the MS spectra data.
 
 ```{r}
+cdb <- CompDb(con)
 s <- Spectra(cdb)
 s
 ```
 
 
 ```{r}
-s_d <- spectraData(s)
+spectraData(s, columns = c("msLevel", "compound_id", "nodename", "rtime", "retention_time", "spectrum_id"))
+```
+
+
+
+
+```{r}
+spectraVariables(s)
 ```
 
 
 ```{r}
 #Function for adding spectra to a Compdb database
-spectra_object <- Spectra(msms_spectrum)
-cdb2 <- CompDb(con)
-insertSpectra(cdb2, spectra_object)
-dbReadTable(con, "msms_spectrum_peak")
+# spectra_object <- Spectra(msms_spectrum)
+# cdb2 <- CompDb(con)
+# insertSpectra(cdb2, spectra_object)
+# dbReadTable(con, "msms_spectrum_peak")
 ```
 
 
