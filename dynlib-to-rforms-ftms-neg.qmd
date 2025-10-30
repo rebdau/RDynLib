@@ -738,6 +738,9 @@ spectraVariables(s)
 Only, at present we don't have a simple function to extract the experiment data
 - we would need to extract that using SQL queries.
 
+```{r}
+dbDisconnect(con)
+```
 
 
 # Session information
