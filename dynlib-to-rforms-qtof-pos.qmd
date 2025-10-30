@@ -622,9 +622,7 @@ dbExecute(con, "
 ```{r}
 dbWriteTable(con, "feature_matrix", nodes_long, append = TRUE, row.names = FALSE)
 ```
-```{r}
-dbExecute(con, "DROP TABLE IF EXISTS feature_matrix;")
-```
+
 
 
 ```{r}
