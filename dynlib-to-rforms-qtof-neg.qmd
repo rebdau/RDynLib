@@ -599,7 +599,7 @@ read_and_process <- function(dir) {
 }
 
 nodes_long <- rbindlist(lapply(exp_dirs, read_and_process), use.names = TRUE, fill = TRUE)
-
+colnames(nodes_long)[colnames(nodes_long) == "node_name"] <- "nodename"
 nodes_long
 
 
@@ -611,7 +611,7 @@ nodes_long
 ```{r}
 dbExecute(con, "
   CREATE TABLE IF NOT EXISTS feature_matrix (
-    node_name TEXT,
+    nodename TEXT,
     dataOrigin TEXT,
     Value REAL,
     expid INTEGER,
