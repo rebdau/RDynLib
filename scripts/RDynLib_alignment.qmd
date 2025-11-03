@@ -9,7 +9,7 @@ date: 'Compiled: `r format(Sys.Date(), "%B %d, %Y")`'
 
 ```{r setup, include=FALSE}
 # Prevent R Notebook from resetting working directory at end of chunks
-knitr::opts_knit$set(root.dir = getwd())
+#knitr::opts_knit$set(root.dir = getwd())
 
 ```
 
@@ -48,7 +48,8 @@ The function `Get_All_DynLib_files` uploads the DynLib database to `finlist`. `f
 
 ```{r}
 # Hard-coded base path (adjust as needed)
-base.dir <- "D:/RDynLib/inst"
+base.dir <- "C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib/inst"
+
 finlist <- Get_All_DynLib_files(base.dir)
 ```
 
@@ -262,7 +263,7 @@ ESImode <- NULL
 chrg <- NULL
 
 # Run local retention time alignment
-Assoc<-Aligning_FT_QTOF(expnr.ft,finlist, )
+Assoc<-Aligning_FT_QTOF(expnr.ft,finlist )
 
 ```
 
