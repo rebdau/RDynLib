@@ -7,12 +7,6 @@ editor: source
 date: 'Compiled: `r format(Sys.Date(), "%B %d, %Y")`'
 ---
 
-```{r setup, include=FALSE}
-# Prevent R Notebook from resetting working directory at end of chunks
-knitr::opts_knit$set(root.dir = getwd())
-
-```
-
 # Introduction
 
 In this document, we upload the existing DynLib library and RDynLib package and align DynLib subdatabases
@@ -255,7 +249,6 @@ Assoc_EXPID_FTn<-strsplit(finlist[[8]][,3],",")
 expnr.ft <- 191
 
 # Run local retention time alignment
-Assoc<-Aligning_FT_QTOF(expnr.ft,finlist, )
-
+Assoc<-Aligning_FT_QTOF(expnr.ft,finlist)
 ```
 
