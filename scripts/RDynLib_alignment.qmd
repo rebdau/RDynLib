@@ -251,15 +251,8 @@ Assoc_EXPID_FTn<-strsplit(finlist[[8]][,3],",")
 # Make sure your finlist is already loaded
 # e.g., finlist <- Get_All_DynLib_files(base.dir)
 
-# Select example experiment numbers
+# Select example FT neg experiment number
 expnr.ft <- 191
-expnr.syn <- 38
-
-# Optional parameters
-err <- 0.02
-t.ini <- 5
-ESImode <- NULL
-chrg <- NULL
 
 # Run local retention time alignment
 Assoc<-Aligning_FT_QTOF(expnr.ft,finlist, )
