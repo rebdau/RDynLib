@@ -100,7 +100,7 @@ Differ_of_retdif<-function(Lst,res.F){
 	 }
 	}
 	fin.matrix<-data.frame(cbind(index.matrix,sd.vector))
-	o<-order(fin.matrix[dim(fin.matrix)[2]])
+	o<-order(fin.matrix[[dim(fin.matrix)[2]]])
 	fin.matrix<-fin.matrix[o,]
 		#fin.matrix is sorted following increasing sd
 	for (i in 1:length(Lst)){
