@@ -27,14 +27,14 @@ Aligning_FT_QTOF<-function(expnr.ft,finlist,err=NULL,t.ini=NULL,lc.err=NULL,
 	if (is.null(cutoff)) cutoff=1
 	if (is.null(Assoc)) {
 	 chrg=NULL
-	 Assoc<-finlist[[4]]
-	 Assoc_EXPID_FTn<-strsplit(finlist[[5]][,3],",")
+	 Assoc<-finlist[[5]]
+	 Assoc_EXPID_FTn<-strsplit(finlist[[8]][,3],",")
 	 for (i in 1:length(Assoc_EXPID_FTn)) {
 	  syn.sel<-which(Assoc_EXPID_FTn[[i]]%in%as.character(expnr.ft))
 	  if (length(syn.sel)!=0) break
 	 }
 	 	#i reflects the row obtained by the former for loop:
-	 syn.poss<-finlist[[5]][i,2]
+	 syn.poss<-finlist[[8]][i,2]
 	 if (syn.poss=="NULL") {
 	  return("The entered expnr.ft does not correspond with a 
 	 		QTOFneg experiment.")
@@ -42,13 +42,13 @@ Aligning_FT_QTOF<-function(expnr.ft,finlist,err=NULL,t.ini=NULL,lc.err=NULL,
 	} else {
 	 chrg<-"pos"
 	 Assoc<-finlist[[10]]
-	 Assoc_EXPID_FTn<-strsplit(finlist[[5]][,4],",")
+	 Assoc_EXPID_FTn<-strsplit(finlist[[8]][,4],",")
 	 for (i in 1:length(Assoc_EXPID_FTn)) {
 	  syn.sel<-which(Assoc_EXPID_FTn[[i]]%in%as.character(expnr.ft))
 	  if (length(syn.sel)!=0) break
 	 }
 	 	#i reflects the row obtained by the former for loop:
-	 syn.poss<-finlist[[5]][i,1]
+	 syn.poss<-finlist[[8]][i,1]
 	 if (syn.poss=="NULL") {
 	  return("The entered expnr.ft does not correspond with a 
 	 		QTOFpos experiment.")
