@@ -7,12 +7,6 @@ editor: source
 date: 'Compiled: `r format(Sys.Date(), "%B %d, %Y")`'
 ---
 
-```{r setup, include=FALSE}
-# Prevent R Notebook from resetting working directory at end of chunks
-#knitr::opts_knit$set(root.dir = getwd())
-
-```
-
 # Introduction
 
 In this document, we upload the existing DynLib library and RDynLib package and align DynLib subdatabases
@@ -49,7 +43,6 @@ The function `Get_All_DynLib_files` uploads the DynLib database to `finlist`. `f
 ```{r}
 # Hard-coded base path (adjust as needed)
 base.dir <- "C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib/inst"
-
 finlist <- Get_All_DynLib_files(base.dir)
 ```
 
@@ -155,6 +148,47 @@ LCal <- Aligning_General(expnr.ft, expnr.syn, err = err, t.ini = t.ini,
 head(LCal)
 
 ```
+```{r}
+# Select example experiment numbers
+expnr.ft <- 191
+expnr.syn <- 38
+
+# Optional parameters
+err <- 0.02
+t.ini <- 5
+
+#SQL databases paths
+FT_path <- "C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/FTMS/data/DYL_FLAX_FTMSneg.sqlite"
+QTOF_path <- "C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/QTOF/data/DYL_FLAX_QTOFneg.sqlite"
+align_SQL <- Aligning_General_SQL(FT_path, QTOF_path, expnr.ft, expnr.syn, err, t.ini)
+
+head(align_SQL)
+```
+
+
+```{r}
+# Select example experiment numbers
+expnr.ft <- 266
+expnr.syn <- 52
+
+# Optional parameters
+err <- 0.02
+t.ini <- 5
+
+#SQL databases paths
+FT_path <- "C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/FTMS/data/DYL_FLAX_FTMSneg.sqlite"
+QTOF_path <- "C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/QTOF/data/DYL_FLAX_QTOFneg.sqlite"
+align_flax_SQL <- Aligning_General_SQL(FT_path, QTOF_path, expnr.ft, expnr.syn, err, t.ini)
+
+head(align_flax_SQL)
+```
+
+```{r}
+LCal_sql <- matchFTSyn_SQL(align_SQL, FT_path, QTOF_path, minIon = 0.6)
+head(LCal_sql)
+nrow(LCal_sql)
+```
+
 
 ## (2) Remove false positives based on spectral match
 The `matchFTSyn` function removes false positive FTm/z, QTOFm/z peak pairs by checking whether a certain percentage of the MS2 spectral peaks can be traced in the MS/MS spectrum. 
@@ -175,8 +209,8 @@ The fraction of FTMS MS2 peaks that should be traced in the QTOF MS/MS spectrum 
 ```{r}
 
 
-LCal <- matchFTSyn(LCal, finlist, minIon = NULL, chrg = NULL)
-
+LCal <- matchFTSyn(LCal, finlist, minIon = 0.6, chrg = NULL)
+head(LCal)
 ```
 
 ## (3) Remove outliers based on retention time difference
@@ -252,18 +286,14 @@ Assoc_EXPID_FTn<-strsplit(finlist[[8]][,3],",")
 # Make sure your finlist is already loaded
 # e.g., finlist <- Get_All_DynLib_files(base.dir)
 
-# Select example experiment numbers
+# Select example FT neg experiment number
 expnr.ft <- 191
-expnr.syn <- 38
-
-# Optional parameters
-err <- 0.02
-t.ini <- 5
-ESImode <- NULL
-chrg <- NULL
 
 # Run local retention time alignment
-Assoc<-Aligning_FT_QTOF(expnr.ft,finlist )
+Assoc<-Aligning_FT_QTOF(expnr.ft,finlist)
 
+```
+```{r}
+Assoc
 ```
 
