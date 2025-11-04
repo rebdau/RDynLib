@@ -1,19 +1,20 @@
 ---
-title: "Untitled"
-format: html
-server: shiny
+title: "Adding flax qtof neg sql to Dynlib qtof neg sql"
+format:
+  html:
+    toc: true
+    self-contained: true
+author: "Ahlam Mentag, Johannes Rainer"
 ---
 
 ## Shiny Documents
 
-This Quarto document is made interactive using Shiny. Interactive documents allow readers to modify parameters and see the results immediately. Learn more about Shiny interactive documents at <https://quarto.org/docs/interactive/shiny/>.
-
-## Inputs and Outputs
-
-You can embed Shiny inputs and outputs in your document. Outputs are automatically updated whenever inputs change. This demonstrates how a standard R plot can be made interactive:
+This quarto document represents the full workflow to add qtofneg flax to Dynlib
+sql database, and then to a Combpdb and spectra Objects
 
 ```{r}
 library(Spectra)
+library(CompoundDb)
 library(DBI)
 library(dplyr)
 library(RSQLite)
@@ -291,8 +292,6 @@ dbGetQuery(con_merged, "Select * from feature_matrix where expid = 52 LIMIT 10")
 
 #Converting the merged sql connection to a compdb object
 ```{r}
-library(CompoundDb)
-
 cdb <- CompDb(con_merged)
 cdb
 ```
