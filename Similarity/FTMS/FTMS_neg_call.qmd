@@ -13,7 +13,9 @@ library(Spectra)
 library(CompoundDb)
 pth <- getwd()
 pth
-setwd(pth)
+setwd("C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib/Similarity/FTMS")
+pth <- getwd()
+pth
 ```
 
 
@@ -36,7 +38,7 @@ library(DBI)
 library(RSQLite)
 dbf <- file.path(pth,"/data", "DyLib_FTMS_neg_or.sqlite")
 db <- dbConnect(SQLite(), dbf)
-
+dbExecute(db, "DROP TABLE IF EXISTS feature_matrix ")
 experiment_df <- dbGetQuery(db, "SELECT * FROM experiment")
 
 #here we remove "x", "x.1" columns from experiment table 
@@ -55,15 +57,15 @@ dy_sps <- Spectra(cdb)
 
 
 ```{r}
-spectraData(dy_sps)
+spectraData(dy_sps, columns = c("rtime"))
 ```
 
 
 
 Here we load the FTMS of flax seed database (it's already a spectra object)  
 ```{r}
-load("data/ftms_unique_tree.RData")
-ft_neg <- ftms_one_tree
+load("data/ftms_one_merged_tree.RData")
+ft_neg <- ftms_one_merged_tree
 spectraData(ft_neg)
 ```
 
@@ -77,6 +79,7 @@ result <- symmetric_dotproduct_combined(ft_neg, dy_sps, polarity_query = 0, pola
 #save the result to a .RData object
 save(result, file = "data/match_DyFtms_neg.RData")
 load("data/match_DyFtms_neg.RData")
+nrow(result)
 
 print(result)
 ```
@@ -87,5 +90,10 @@ the resulting table has `r nrow(result)` rows, so in this comparison there is
 
 
 
+```{r}
+View(result[, c("score","matched_peaks_count","target_spectrum_id","spectrumId",
+                "msLevel","target_msLevel","rtime","target_rtime")])
+
+```
 
 
