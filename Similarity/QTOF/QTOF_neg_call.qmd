@@ -12,6 +12,7 @@ negative database.
 ```{r}
 library(Spectra)
 library(CompoundDb)
+setwd("C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib/Similarity/QTOF")
 pth <- getwd()
 pth
 ```
@@ -36,7 +37,7 @@ library(DBI)
 library(RSQLite)
 dbf <- file.path("data", "DyLib_QTOF_neg.sqlite")
 db <- dbConnect(SQLite(), dbf)
-
+dbExecute(db, "DROP TABLE IF EXISTS feature_matrix ")
 experiment_df <- dbGetQuery(db, "SELECT * FROM experiment")
 
 #here we remove "x", "x.1" columns from experiment table 
@@ -55,7 +56,7 @@ dy_sps <- Spectra(cdb)
 
 Here we load the QTOF of flax seed database (it's already a spectra object)  
 ```{r}
-load("/data/qtof_filtered.RData")
+load("data/ms2_qtof_Comb.RData")
 qtof_neg <- qtof_filtered
 spectraData(qtof_neg)
 ```
@@ -79,7 +80,12 @@ nrow(result)
 
 the resulting table has 23 rows, which means 23 matches
 
+```{r}
+View(as.data.frame(result[, c("score","matched_peaks_count","target_spectrum_id",
+                              "spectrumId", "msLevel", "target_msLevel")]))
+
+```
 
 
-`
+
 
