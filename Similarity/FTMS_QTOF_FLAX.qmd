@@ -12,6 +12,7 @@ negative database.
 ```{r}
 library(Spectra)
 library(CompoundDb)
+library(pander)
 setwd("C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity")
 pth <- getwd()
 pth
@@ -62,6 +63,9 @@ load("data/ms2_qtof_sep.RData")
 qtof_neg <- ms2_qtof_sep
 spectraData(qtof_neg)
 ```
+
+
+
 ```{r}
 peak_counts_qtof <- lengths(qtof_neg)
 summary(peak_counts_qtof)
@@ -89,7 +93,7 @@ res_dda3 <- sim_final_final(qtof_neg, ftms_MS2, collision_energy_qtof = "DDA3", 
 #Combine all the similarity results into one dataframe
 DDA_combined <- rbind(res_dda1, res_dda2, res_dda3)
 #save the result to a .RData object
-#save(DDA_combined, file = "data/DDA1_DDA2_DDA3.RData")
+save(DDA_combined, file = "data/DDA1_DDA2_DDA3.RData")
 
 
 res_dda1 
@@ -105,19 +109,6 @@ head(as.data.frame(DDA_combined)[,
      c("target_dataOrigin", "dataOrigin", "score", 
        "matched_peaks_count", "target_feature_id", "feature_id")], 3)
 
-```
-
-
-```{r}
-idx <- which(spectraData(qtof_neg)$feature_id == "FT03894" & spectraData(qtof_neg)$dataOrigin == "C:\\Users\\amentag\\Desktop\\these\\These\\clones\\new_clones\\RDynLib_qtof\\data\\mzML_cent1\\S1Rbneg-DDA1.mzML")
-peaksData(qtof_neg)[[idx]]
-spectraData(qtof_neg)$precursorMz[[idx]]
-```
-
-```{r}
-idx2 <- which(spectraData(ftms_MS2)$feature_id == "FT1783" & spectraData(ftms_MS2)$dataOrigin == "C:\\Users\\amentag\\Desktop\\Rcodes\\RDynLib_ftms\\data\\mzML\\S1R2.mzML")
-peaksData(ftms_MS2)[[idx2]]
-spectraData(ftms_MS2)$precursorMz[[idx2]]
 ```
 
 
