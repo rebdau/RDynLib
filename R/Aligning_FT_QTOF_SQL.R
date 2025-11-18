@@ -8,15 +8,15 @@ Aligning_FT_QTOF_SQL <- function(
   library(DBI)
   library(RSQLite)
   
-  stopifnot(length(FT_path) == 1, is.character(FT_path), file.exists(FT_path))
-  stopifnot(length(QTOF_path) == 1, is.character(QTOF_path), file.exists(QTOF_path))
-  
 
   if (is.character(Assoc)) {
+    
+    assoc_file <- Assoc 
+    
     if (file.exists(Assoc)) {
       Assoc_df <- read.table(Assoc, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-      assoc_file <- Assoc
     } else {
+      
       Assoc_df <- data.frame(
         ref_compid = integer(0),
         target_compid = integer(0),
@@ -24,12 +24,15 @@ Aligning_FT_QTOF_SQL <- function(
         target_database = character(0),
         stringsAsFactors = FALSE
       )
-      assoc_file <- NULL
     }
+    
   } else if (is.data.frame(Assoc)) {
+    
     Assoc_df <- Assoc
-    assoc_file <- NULL
+    assoc_file <- NULL   
+    
   } else {
+    
     Assoc_df <- data.frame(
       ref_compid = integer(0),
       target_compid = integer(0),
@@ -40,12 +43,14 @@ Aligning_FT_QTOF_SQL <- function(
     assoc_file <- NULL
   }
   
+  
   FT_con   <- DBI::dbConnect(RSQLite::SQLite(), FT_path)
   QTOF_con <- DBI::dbConnect(RSQLite::SQLite(), QTOF_path)
   
   #Detect polarity
-  ft_mode  <- dbGetQuery(FT_con, "SELECT mode FROM experiment WHERE expid = ?", params = list(expnr.ft))$mode
-  qtof_mode <- dbGetQuery(QTOF_con, "SELECT mode FROM experiment WHERE expid = ?", params = list(expnr.syn))$mode
+  ft_mode  <- dbGetQuery(FT_con, sprintf("SELECT mode FROM experiment WHERE expid = %d", expnr.ft))$mode
+  qtof_mode <- dbGetQuery(QTOF_con, sprintf("SELECT mode FROM experiment WHERE expid = %d", expnr.syn))$mode
+  
   polarity_ft  <- ifelse(ft_mode == "neg", 0, 1)
   polarity_qtof <- ifelse(qtof_mode == "neg", 0, 1)
   
@@ -60,7 +65,7 @@ Aligning_FT_QTOF_SQL <- function(
   
   #Fill Assoc
   Assoc_df <- FillAssocFTnQTOFn_SQL(
-    FT_con, QTOF_con, Assoc_df, expnr.ft, expnr.syn,
+    FT_con = FT_con, QTOF_con = QTOF_con, Assoc = Assoc_df, expnr.ft = expnr.ft, expnr.syn = expnr.syn,
     cutoff = 1, rg = rg, lc.err = lc.err, err = err, minIon = minIon,
     polarity_ft = polarity_ft, polarity_qtof = polarity_qtof,
     FT_path = FT_path, QTOF_path = QTOF_path
