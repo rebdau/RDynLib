@@ -1,19 +1,19 @@
 Aligning_General<-function(expnr.ft,expnr.syn,err,t.ini,finlist,ESImode=NULL,chrg=NULL){
 		#If chrg is not NULL, then the QTOFpos database is involved.
 	if (is.null(chrg)) {
-	 ft<-finlist[[1]][[1]]
+	 ft<-finlist[[1]][[1]]  #ftmsneg
 	 if (is.null(ESImode)){
-	  syn<-finlist[[3]][[1]]
+	  syn<-finlist[[3]][[1]] #qtofneg
 	 } else {
-	  syn<-finlist[[2]][[1]]
+	  syn<-finlist[[2]][[1]]  #ftmspos
 	 }
 	} else {
 	 if (is.null(ESImode)){
-	  ft<-finlist[[2]][[1]]
-	  syn<-finlist[[9]][[1]]
+	  ft<-finlist[[2]][[1]]  #ftmspos
+	  syn<-finlist[[9]][[1]]  #qtofpos
 	 } else {
-	  ft<-finlist[[3]][[1]]
-	  syn<-finlist[[9]][[1]]
+	  ft<-finlist[[3]][[1]] #qtofneg
+	  syn<-finlist[[9]][[1]] #qtofpos
 	 }
 	}
 	ft.exp<-ft[ft[,4]==expnr.ft,]
@@ -31,6 +31,7 @@ Aligning_General<-function(expnr.ft,expnr.syn,err,t.ini,finlist,ESImode=NULL,chr
 		#match with those of the key chromatogram.
 	# ESImode adjustment
 	if (!is.null(ESImode)) {
+	  #m/z is it the mass_measured of the feature?
 	  syn.exp[,"m/z"] <- syn.exp[,"m/z"] - 2.01456
 	}
 	
