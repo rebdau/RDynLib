@@ -96,6 +96,7 @@ merge_databases <- function(main_db, add_db, output_db) {
       df$compound_id <- as.character(df$compound_id)
       df$ms_level <- as.integer(df$ms_level)
       df$polarity <- as.integer(df$polarity)
+      df$spectrum_type <- as.character(df$spectrum_type)
       df$precursor_mz <- as.numeric(df$precursor_mz)
       df$precursorIntensity <- as.numeric(df$precursorIntensity)
       df$precursorCharge <- as.integer(df$precursorCharge)
