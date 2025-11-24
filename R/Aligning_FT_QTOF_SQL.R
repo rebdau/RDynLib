@@ -53,7 +53,7 @@
 #' This table is updated with new associations found by the alignment procedure. 
 #' 
 #'
-#' @importFrom DBI dgGetQuery
+#' @importFrom DBI dbGetQuery
 #' @import RSQLite
 #'
 #'
@@ -106,8 +106,9 @@ Aligning_FT_QTOF_SQL <- function(
   QTOF_con <- DBI::dbConnect(RSQLite::SQLite(), QTOF_path)
   
   #Detect polarity
-  ft_mode  <- dbGetQuery(FT_con, sprintf("SELECT mode FROM experiment WHERE expid = %d", FT_expnr))$mode
-  qtof_mode <- dbGetQuery(QTOF_con, sprintf("SELECT mode FROM experiment WHERE expid = %d", QTOF_expnr))$mode
+  ft_mode  <- DBI::dbGetQuery(FT_con, sprintf("SELECT mode FROM experiment WHERE expid = %d", FT_expnr))$mode
+  qtof_mode <- DBI::dbGetQuery(QTOF_con, sprintf("SELECT mode FROM experiment WHERE expid = %d", QTOF_expnr))$mode
+
   
   if (!length(ft_mode))
     stop("Experiment '", FT_expnr,"' not found in the database '", FT_path, "'")
@@ -127,7 +128,6 @@ Aligning_FT_QTOF_SQL <- function(
   #Regression
   rg <- RegressionPie_LCalign(LCal, startpoint)
   PlotPie_LCalign(LCal, rg)
-  
   #Fill Assoc
   Assoc_df <- FillAssocFTnQTOFn_SQL(
     FT_con = FT_con, QTOF_con = QTOF_con, Assoc = Assoc_df, FT_expnr = FT_expnr, QTOF_expnr = QTOF_expnr,
@@ -136,6 +136,7 @@ Aligning_FT_QTOF_SQL <- function(
     FT_path = FT_path, QTOF_path = QTOF_path
   )
   
+  message(sprintf("Number of new rows added: %d", n_new))
 
   dbDisconnect(FT_con)
   dbDisconnect(QTOF_con)
