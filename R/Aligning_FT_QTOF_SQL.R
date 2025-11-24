@@ -1,14 +1,72 @@
+#' @title Aligning FTMS and QTOF experiments with the same/different polarities 
+#' 
+#' 
+#' @description
+#' 
+#' `Aligning_FT_QTOF_SQL()` Align FTMS and QTOF experiments with the same 
+#' or different polarities, By calling a set of defined functions, and add the 
+#' aligned compounds to a given text file.
+#' 
+#' @details
+#' 
+#' the function reads the both sql databases FTMS and QTOF, and extracts 
+#' their mode, create an output file to store the alignment results in a .txt 
+#' file if it's already given by the user otherwise we create a new one. 
+#' Then calls a set of defined functions :
+#' 
+#' `Aligning_General_SQL()`: performs the local alignment, and adjust the mz 
+#' values if the alignment is between two different polarities.
+#' `matchFTSyn_SQL(): removes the matches found by the previous function
+#' if they contain fewer than `minIon` matched peaks.
+#'`RemoveOutliers()`: calculate the standard deviation in the rt difference 
+#'found between each matched feature and remove all rows outside a range.
+#'`RegressionPie_LCalign()`: apply a regression model  to reduce the influence
+#' of false matches and outliers.
+#'`FillAssocFTnQTOFn_SQL()`: store the final aligned compounds to a .txt file 
+#'
+#'@param FT_path `character(1)` the path to the FTMS SQL database.
+#'@param QTOF_path `character(1)` the path to the QTOF SQL database.
+#'@param FT_expnr `numeric(1)` the FTMS reference experiment to align. 
+#'@param QTOF_expnr `numeric(1)` the QTOF experiment to align with the previous 
+#' FTMS experiment.
+#'@param Assoc `character(1)` the file that contains some previous alignment 
+#' results done by the user. If `NULL` we create it in the function.
+#'@param err `numeric(1)` is the m/z tolerance window used to decide which QTOF
+#' peaks are potential isomeric matches for a given FT peak.
+#'@param t.ini `numeric(1)` used in the `Aligning_General_SQL()` to define the 
+#' number of neighboring peaks.
+#'@param lc.err `numeric(1)` the retention-time alignment tolerance.
+#'@param rng `numeric(1)` used in `RemoveOutliers()` refers to the number of 
+#' standard  deviations used to define the outlier cutoff.
+#'@param minIon `numeric(1)` Minimum number of matched peaks required to 
+#' consider a valid match. Matches with fewer than `minIon` shared 
+#' ions are discarded.
+#'@param startpoint `numeric(1)` used in `RegressionPie_LCalign()` refers to  
+#' the minimum retention time for the first knot in piecewise regression.
+#'@param save_assoc `logical(1)` If true we add the alignment result to the
+#' Assoc text file.
+#'@return A `data.frame` containing the matched FT–QTOF compounds with columns:
+#' `ref_compid`: FTMS compound ID
+#' `target_compid`: QTOF compound ID
+#' `ref_database`: filename of the FTMS database
+#' `target_database`: filename of the QTOF database
+#' This table is updated with new associations found by the alignment procedure. 
+#' 
+#'
+#' @importFrom DBI dgGetQuery
+#' @import RSQLite
+#'
+#'
+#'
+#' @export
 Aligning_FT_QTOF_SQL <- function(
-    FT_path, QTOF_path, expnr.ft, expnr.syn, 
+    FT_path, QTOF_path, FT_expnr, QTOF_expnr, 
     Assoc = NULL, err = 0.02, t.ini = 5,
     lc.err = 1, rng = 2, minIon = 0.6, startpoint = 1,
     save_assoc = FALSE 
 ) {
-  
-  library(DBI)
-  library(RSQLite)
-  
 
+  
   if (is.character(Assoc)) {
     
     assoc_file <- Assoc 
@@ -48,15 +106,22 @@ Aligning_FT_QTOF_SQL <- function(
   QTOF_con <- DBI::dbConnect(RSQLite::SQLite(), QTOF_path)
   
   #Detect polarity
-  ft_mode  <- dbGetQuery(FT_con, sprintf("SELECT mode FROM experiment WHERE expid = %d", expnr.ft))$mode
-  qtof_mode <- dbGetQuery(QTOF_con, sprintf("SELECT mode FROM experiment WHERE expid = %d", expnr.syn))$mode
+  ft_mode  <- dbGetQuery(FT_con, sprintf("SELECT mode FROM experiment WHERE expid = %d", FT_expnr))$mode
+  qtof_mode <- dbGetQuery(QTOF_con, sprintf("SELECT mode FROM experiment WHERE expid = %d", QTOF_expnr))$mode
+  
+  if (!length(ft_mode))
+    stop("Experiment '", FT_expnr,"' not found in the database '", FT_path, "'")
+  if (!length(qtof_mode))
+    stop("Experiment '", QTOF_expnr,"' not found in the database '", QTOF_path, "'")
+  
   
   polarity_ft  <- ifelse(ft_mode == "neg", 0, 1)
   polarity_qtof <- ifelse(qtof_mode == "neg", 0, 1)
   
   #Generate LCal and remove outliers
-  LCal <- Aligning_General_SQL(FT_con, QTOF_con, expnr.ft, expnr.syn, err, t.ini)
-  LCal <- matchFTSyn_SQL(LCal, FT_con, QTOF_con, minIon = minIon)
+  LCal <- Aligning_General_SQL(FT_con, QTOF_con, FT_expnr, QTOF_expnr, err, t.ini)
+  LCal <- matchFTSyn_SQL(LCal, FT_con, QTOF_con, minIon = minIon,
+                         polarity_ft = polarity_ft, polarity_qtof = polarity_qtof)
   LCal <- RemoveOutliers(LCal, rng)
   
   #Regression
@@ -65,7 +130,7 @@ Aligning_FT_QTOF_SQL <- function(
   
   #Fill Assoc
   Assoc_df <- FillAssocFTnQTOFn_SQL(
-    FT_con = FT_con, QTOF_con = QTOF_con, Assoc = Assoc_df, expnr.ft = expnr.ft, expnr.syn = expnr.syn,
+    FT_con = FT_con, QTOF_con = QTOF_con, Assoc = Assoc_df, FT_expnr = FT_expnr, QTOF_expnr = QTOF_expnr,
     cutoff = 1, rg = rg, lc.err = lc.err, err = err, minIon = minIon,
     polarity_ft = polarity_ft, polarity_qtof = polarity_qtof,
     FT_path = FT_path, QTOF_path = QTOF_path
