@@ -8,82 +8,93 @@
 #allows to decide on the FT retention time from which regression
 #should be started. 
 
-RegressionPie_LCalign_SQL <- function(LCal, startpoint = 1, min_gap = 1) {
-  # Extract numeric columns safely
+RegressionPie_LCalign_SQL <- function(LCal, startpoint = 1) {
+
   x <- as.numeric(LCal[, 2])  # FT retention times
   y <- as.numeric(LCal[, 4])  # Synapt retention times
   
-  # Remove invalid rows
-  valid_idx <- which(!is.na(x) & !is.na(y) & is.finite(x) & is.finite(y))
-  x <- x[valid_idx]
-  y <- y[valid_idx]
+  # Remove NA
+  valid <- which(!is.na(x) & !is.na(y))
+  x <- x[valid]
+  y <- y[valid]
   
-  if(length(x) < 2 || length(y) < 2) {
-    warning("Not enough valid data points for regression.")
-    return(rep(NA, 6))
-  }
+  # Prepare output vectors
+  knottime1 <- c()
+  knottime2 <- c()
+  VarExp <- c()
   
-  # Candidate knot positions: unique x above startpoint
-  knots <- sort(unique(x[x >= startpoint]))
-  n_knots <- length(knots)
+  # Initial model: no knots
+  out <- lm(y ~ x)
+  knottime1 <- c(knottime1, 0)
+  knottime2 <- c(knottime2, 0)
+  VarExp <- c(VarExp, summary(out)$adj.r.squared)
   
-  knottime1 <- c(0)
-  knottime2 <- c(0)
-  VarExp <- c(NA)
+
+  unique_x <- sort(unique(x[x >= startpoint]))
   
-  # Initial simple linear regression
-  out <- tryCatch(lm(y ~ x), error = function(e) NULL)
-  VarExp[1] <- if(!is.null(out)) summary(out)$adj.r.squared else NA
-  
-  # One-knot piecewise regression
-  for(k1 in knots) {
-    t1 <- pmax(0, x - k1)
-    out <- tryCatch(lm(y ~ x + t1), error = function(e) NULL)
+  # One-knot models
+  for (k1 in unique_x) {
+    t1 <- ifelse(x > k1, x - k1, 0)
+    out <- lm(y ~ x + t1)
     knottime1 <- c(knottime1, k1)
     knottime2 <- c(knottime2, 0)
-    VarExp <- c(VarExp, if(!is.null(out)) summary(out)$adj.r.squared else NA)
+    VarExp <- c(VarExp, summary(out)$adj.r.squared)
   }
   
-  # Two-knot piecewise regression (only consider knots with min_gap)
-  if(n_knots >= 2) {
-    for(i in 1:(n_knots-1)) {
-      k1 <- knots[i]
-      t1 <- pmax(0, x - k1)
-      for(j in (i+1):n_knots) {
-        k2 <- knots[j]
-        if(k2 - k1 < min_gap) next  # skip too-close knots
-        t2 <- pmax(0, x - k2)
-        out <- tryCatch(lm(y ~ x + t1 + t2), error = function(e) NULL)
+  # Two-knot models 
+  if (length(unique_x) > 1) {
+    for (i in seq_len(length(unique_x) - 1)) {
+      k1 <- unique_x[i]
+      t1 <- ifelse(x > k1, x - k1, 0)
+      
+      for (j in (i + 1):length(unique_x)) {
+        k2 <- unique_x[j]
+        t2 <- ifelse(x > k2, x - k2, 0)
+        out <- lm(y ~ x + t1 + t2)
+        
         knottime1 <- c(knottime1, k1)
         knottime2 <- c(knottime2, k2)
-        VarExp <- c(VarExp, if(!is.null(out)) summary(out)$adj.r.squared else NA)
+        VarExp <- c(VarExp, summary(out)$adj.r.squared)
       }
     }
   }
   
-  # Select the best model
-  best_model <- data.frame(knottime1, knottime2, VarExp)
-  best_model <- best_model[order(best_model$VarExp, decreasing = TRUE), ]
+  # Select best model
+  best.model <- data.frame(knottime1, knottime2, VarExp)
+  best.model <- best.model[order(best.model$VarExp, decreasing = TRUE), ]
   
-  t1 <- pmax(0, x - best_model$knottime1[1])
-  t2 <- pmax(0, x - best_model$knottime2[1])
+  k1_best <- best.model$knottime1[1]
+  k2_best <- best.model$knottime2[1]
   
+  t1 <- ifelse(x > k1_best, x - k1_best, 0)
+  t2 <- ifelse(x > k2_best, x - k2_best, 0)
+
   library(MASS)
-  exp.intercept <- exp.slope <- exp.t1 <- exp.t2 <- 0
   
-  # Robust regression based on best model
-  if(best_model$knottime1[1] == 0 && best_model$knottime2[1] == 0) {
-    out <- tryCatch(rlm(y ~ x), error = function(e) NULL)
-    if(!is.null(out)) { co <- summary(out)$coef; exp.intercept <- co[1,1]; exp.slope <- co[2,1] }
-  } else if(best_model$knottime2[1] == 0) {
-    out <- tryCatch(rlm(y ~ x + t1), error = function(e) NULL)
-    if(!is.null(out)) { co <- summary(out)$coef; exp.intercept <- co[1,1]; exp.slope <- co[2,1]; exp.t1 <- co[3,1] }
+  if (k1_best == 0 && k2_best == 0) {
+    out <- rlm(y ~ x)
+    co <- summary(out)$coef
+    exp.intercept <- co[1, 1]
+    exp.slope <- co[2, 1]
+    exp.t1 <- 0
+    exp.t2 <- 0
+    
+  } else if (k2_best == 0) {
+    out <- rlm(y ~ x + t1)
+    co <- summary(out)$coef
+    exp.intercept <- co[1, 1]
+    exp.slope <- co[2, 1]
+    exp.t1 <- co[3, 1]
+    exp.t2 <- 0
+    
   } else {
-    out <- tryCatch(rlm(y ~ x + t1 + t2), error = function(e) NULL)
-    if(!is.null(out)) { co <- summary(out)$coef; exp.intercept <- co[1,1]; exp.slope <- co[2,1]; exp.t1 <- co[3,1]; exp.t2 <- co[4,1] }
+    out <- rlm(y ~ x + t1 + t2)
+    co <- summary(out)$coef
+    exp.intercept <- co[1, 1]
+    exp.slope <- co[2, 1]
+    exp.t1 <- co[3, 1]
+    exp.t2 <- co[4, 1]
   }
   
-  rg <- c(exp.intercept, exp.slope, best_model$knottime1[1], exp.t1,
-          best_model$knottime2[1], exp.t2)
-  return(rg)
+  return(c(exp.intercept, exp.slope, k1_best, exp.t1, k2_best, exp.t2))
 }
