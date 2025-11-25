@@ -1,5 +1,6 @@
-matchFTSyn_SQL <- function(LCal, FT_con, QTOF_con, polarity_ft = 0, polarity_qtof = 0,
-                           minIon = 0.6) {
+matchFTSyn_SQL <- function(LCal, FT_con, QTOF_con, polarity_ft = 0, 
+                           polarity_qtof = 0,minIon = 0.6, 
+                           aggregated_Ft = FALSE, aggregated_QTOF = FALSE) {
   
   library(DBI)
   library(RSQLite)
@@ -16,12 +17,29 @@ matchFTSyn_SQL <- function(LCal, FT_con, QTOF_con, polarity_ft = 0, polarity_qto
   
   # Retrieve MS2 peak lists
   # FTMS MS2 peaks
+  ft_cols <- dbListFields(FT_con, "msms_spectrum")
+  
+  if ("spectrum_type" %in% ft_cols) {
+    ft_filter <- if (!aggregated_Ft) {
+      "(s.spectrum_type IS NULL OR s.spectrum_type = '' OR s.spectrum_type = 'not_assembled')"
+    } else {
+      "s.spectrum_type = 'assembled'"
+    }
+  } else {
+    # no spectrum_type column → no filtering
+    ft_filter <- "1=1"
+  }
+  
+  
   ms2_ft_df <- dbGetQuery(FT_con, sprintf("
     SELECT s.compound_id, p.mz
     FROM msms_spectrum s
     JOIN msms_spectrum_peak p USING(spectrum_id)
-    WHERE s.ms_level = 2 AND s.polarity = %d
-    ORDER BY s.compound_id, p.mz", polarity_ft))
+    WHERE s.ms_level = 2
+      AND s.polarity = %d
+      AND %s
+    ORDER BY s.compound_id, p.mz", polarity_ft,ft_filter))
+  
   
   # Round and split into lists per compound_id
   ms2_ft_list <- split(round(ms2_ft_df$mz), ms2_ft_df$compound_id)
@@ -29,12 +47,28 @@ matchFTSyn_SQL <- function(LCal, FT_con, QTOF_con, polarity_ft = 0, polarity_qto
   
   
   # QTOF MS2 peaks 
+  qtof_cols <- dbListFields(QTOF_con, "msms_spectrum")
+  
+  if ("spectrum_type" %in% qtof_cols) {
+    qtof_filter <- if (!aggregated_QTOF) {
+      "(s.spectrum_type IS NULL OR s.spectrum_type = '' OR s.spectrum_type = 'intersect_single_energy')"
+    } else {
+      "s.spectrum_type = 'merged_MSMS_all_energies'"
+    }
+  } else {
+    qtof_filter <- "1=1"
+  }
+  
+  
   ms2_syn_df <- dbGetQuery(QTOF_con, sprintf("
     SELECT s.compound_id, p.mz
     FROM msms_spectrum s
     JOIN msms_spectrum_peak p USING(spectrum_id)
-    WHERE s.ms_level = 2 AND s.polarity = %d
-    ORDER BY s.compound_id, p.mz", polarity_qtof))
+    WHERE s.ms_level = 2
+      AND s.polarity = %d
+      AND %s
+    ORDER BY s.compound_id, p.mz", polarity_qtof,qtof_filter ))
+  
   
   ms2_syn_list <- split(round(ms2_syn_df$mz), ms2_syn_df$compound_id)
   ms2_syn_list <- lapply(ms2_syn_list, unique)
@@ -49,6 +83,11 @@ matchFTSyn_SQL <- function(LCal, FT_con, QTOF_con, polarity_ft = 0, polarity_qto
   ms2.syn[sapply(ms2.syn, is.null)] <- list(integer(0))
   
 
+  
+  if (is.null(LCal) || nrow(LCal) == 0) {
+    message("No candidate alignments found; returning empty LCal.")
+    return(LCal)
+  }
   
   i <- 1
   while (i <= nrow(LCal)) {

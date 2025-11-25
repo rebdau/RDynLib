@@ -1,40 +1,74 @@
 FillAssocFTnQTOFn_SQL <- function(
-    FT_con, QTOF_con, Assoc, expnr.ft, expnr.syn,
+    FT_con, QTOF_con, Assoc, FT_expnr, QTOF_expnr,
     cutoff, rg, lc.err, err, minIon = 0.6,
     polarity_ft = 0, polarity_qtof = 0,
-    FT_path, QTOF_path
+    FT_path, QTOF_path,  aggregated_Ft = FALSE, aggregated_QTOF = FALSE
 ) {
   
-  
+  # Load FT and QTOF compounds
   ft.exp <- dbGetQuery(FT_con, sprintf(
-    "SELECT retention_time AS rt, mass_measured AS mz, compound_id, expid 
-     FROM ms_compound WHERE expid = %d", expnr.ft))
+    "SELECT retention_time, mass_measured, compound_id, expid 
+     FROM ms_compound WHERE expid = %d", FT_expnr))
   
   syn.exp <- dbGetQuery(QTOF_con, sprintf(
-    "SELECT retention_time AS rt, mass_measured AS mz, compound_id, expid 
-     FROM ms_compound WHERE expid = %d", expnr.syn))
-
+    "SELECT retention_time , mass_measured, compound_id, expid 
+     FROM ms_compound WHERE expid = %d", QTOF_expnr))
+  
+  # MS2 filtering based on aggregated flag
+  ft_cols <- dbListFields(FT_con, "msms_spectrum")
+  
+  if ("spectrum_type" %in% ft_cols) {
+    ft_filter <- if (!aggregated_Ft) {
+      "(s.spectrum_type IS NULL OR s.spectrum_type = '' OR s.spectrum_type = 'not_assembled')"
+    } else {
+      "s.spectrum_type = 'assembled'"
+    }
+  } else {
+    # no spectrum_type column → no filtering
+    ft_filter <- "1=1"
+  }
+  
+  
   ms2_ft <- dbGetQuery(FT_con, sprintf("
     SELECT s.compound_id, p.mz
     FROM msms_spectrum s
     JOIN msms_spectrum_peak p USING(spectrum_id)
-    WHERE s.ms_level = 2 AND s.polarity = %d
-    ORDER BY s.compound_id, p.mz", polarity_ft))
+    WHERE s.ms_level = 2
+      AND s.polarity = %d
+      AND %s
+    ORDER BY s.compound_id, p.mz", polarity_ft, ft_filter))
+  
   ms2_ft_list <- split(round(ms2_ft$mz), ms2_ft$compound_id)
+  
+  qtof_cols <- dbListFields(QTOF_con, "msms_spectrum")
+  
+  if ("spectrum_type" %in% qtof_cols) {
+    qtof_filter <- if (!aggregated_QTOF) {
+      "(s.spectrum_type IS NULL OR s.spectrum_type = '' OR s.spectrum_type = 'intersect_single_energy')"
+    } else {
+      "s.spectrum_type = 'merged_MSMS_all_energies'"
+    }
+  } else {
+    qtof_filter <- "1=1"
+  }
+  
   
   ms2_qtof <- dbGetQuery(QTOF_con, sprintf("
     SELECT s.compound_id, p.mz
     FROM msms_spectrum s
     JOIN msms_spectrum_peak p USING(spectrum_id)
-    WHERE s.ms_level = 2 AND s.polarity = %d
-    ORDER BY s.compound_id, p.mz", polarity_qtof))
+    WHERE s.ms_level = 2
+      AND s.polarity = %d
+      AND %s
+    ORDER BY s.compound_id, p.mz", polarity_qtof, qtof_filter))
+  
   ms2_qtof_list <- split(round(ms2_qtof$mz), ms2_qtof$compound_id)
   
-  #Loop over FT compounds
+  # Loop over FT compounds
   for (i in seq_len(nrow(ft.exp))) {
     COMPID <- ft.exp$compound_id[i]
-    x.tR   <- ft.exp$rt[i]
-    if (x.tR < cutoff) next
+    x.tR   <- ft.exp$retention_time[i]
+    if (is.na(x.tR) || x.tR < cutoff) next
     
     t1.tR <- ifelse(rg[3] != 0 & x.tR > rg[3], x.tR - rg[3], 0)
     t2.tR <- ifelse(rg[5] != 0 & x.tR > rg[5], x.tR - rg[5], 0)
@@ -42,7 +76,8 @@ FillAssocFTnQTOFn_SQL <- function(
     y.l  <- y.tR - lc.err
     y.h  <- y.tR + lc.err
     
-    pres <- Find_cand_matches(COMPID, err, syn.exp, ft.exp)
+    # Candidate matches
+    pres <- Find_cand_matches_SQL(COMPID, err, syn.exp, ft.exp)
     if (nrow(pres) == 0) next
     
     ms2ion <- ms2_ft_list[[as.character(COMPID)]]
@@ -52,15 +87,17 @@ FillAssocFTnQTOFn_SQL <- function(
     w.diff <- numeric()
     
     for (w in seq_len(nrow(pres))) {
-      if ((pres$rt[w] > y.l) & (pres$rt[w] < y.h)) {
-        msmsion <- ms2_qtof_list[[as.character(pres$compound_id[w])]]
-        if (is.null(msmsion)) next
-        
-        same_ion <- length(intersect(ms2ion, msmsion))
-        if (same_ion / length(ms2ion) >= minIon) {
-          pres1 <- rbind(pres1, pres[w, ])
-          w.diff <- c(w.diff, abs(y.tR - pres$rt[w]))
-        }
+      rt_w <- pres$retention_time[w]
+      target_compid <- pres$compound_id[w]
+      if (is.na(rt_w) || rt_w <= y.l || rt_w >= y.h) next
+      
+      msmsion <- ms2_qtof_list[[as.character(target_compid)]]
+      if (is.null(msmsion)) next
+      
+      same_ion <- length(intersect(ms2ion, msmsion))
+      if (same_ion / length(ms2ion) >= minIon) {
+        pres1 <- rbind(pres1, pres[w, ])
+        w.diff <- c(w.diff, abs(y.tR - rt_w))
       }
     }
     
@@ -68,14 +105,24 @@ FillAssocFTnQTOFn_SQL <- function(
     pres1 <- pres1[order(w.diff), ]
     
     new_row <- data.frame(
-      ref_compid    = COMPID,
-      target_compid = pres1$compound_id[1],
-      ref_database  = basename(FT_path),
+      ref_compid      = COMPID,
+      target_compid   = pres1$compound_id[1],
+      ref_database    = basename(FT_path),
       target_database = basename(QTOF_path),
       stringsAsFactors = FALSE
     )
     
-    Assoc <- rbind(Assoc, new_row)
+    # Only add if not already present
+    is_new <- !any(
+      Assoc$ref_compid      == new_row$ref_compid &
+        Assoc$target_compid   == new_row$target_compid &
+        Assoc$ref_database    == new_row$ref_database &
+        Assoc$target_database == new_row$target_database
+    )
+    
+    if (is_new) {
+      Assoc <- rbind(Assoc, new_row)
+    }
   }
   
   return(Assoc)

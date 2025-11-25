@@ -20,7 +20,7 @@ All functions of the RDynLib package are in the R subfolder. By running `devtool
 
 #' Load required libraries
 library(devtools)
-
+#rm(list = c("convert_compid_assoc"))
 #` Uploading RDynLib: Load all functions of the RDynlib directory
 load_all()
 ```
@@ -50,25 +50,9 @@ QTOF_con <- DBI::dbConnect(RSQLite::SQLite(), QTOF_path)
 align_SQL <- Aligning_General_SQL(FT_con, QTOF_con, expnr.ft, expnr.syn, err, t.ini)
 
 head(align_SQL)
+nrow(align_SQL)
 ```
 
-
-```{r}
-# Select example experiment numbers
-expnr.ft <- 266
-expnr.syn <- 52
-
-# Optional parameters
-err <- 0.02
-t.ini <- 5
-
-#SQL databases paths
-FT_path <- "C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/FTMS/data/DYL_FLAX_FTMSneg.sqlite"
-QTOF_path <- "C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/QTOF/data/DYL_FLAX_QTOFneg.sqlite"
-align_flax_SQL <- Aligning_General_SQL(FT_path, QTOF_path, expnr.ft, expnr.syn, err, t.ini)
-
-head(align_flax_SQL)
-```
 
 
 ## (2) Remove false positives based on spectral match
@@ -106,7 +90,7 @@ was more accurate than traditional least squares.
 The 'startpoint' allows to decide on the FT retention time from which regression should be started. 
 
 ```{r}
-rg_sql <- RegressionPie_LCalign(LCal_sql, startpoint = 1)
+rg_sql <- RegressionPie_LCalign_SQL(LCal_sql, startpoint = 1)
 head(rg_sql)
 ```
 
@@ -122,34 +106,6 @@ PlotPie_LCalign(LCal_sql,rg_sql)
 
 The `Aligning_FT_QTOF()` function is the wrapper function that manages the full above alignment workflow for a specific FT run, including interactive steps.
 
-This function also **uploads the association tables** and **returns an updated Assoc table**:
-
-Before running `Aligning_FT_QTOF()`, **updated versions of the following files must be uploaded**:
-
--   `subDBexperiment.txt`: Add a new row indicating experiments (expid) from different sub-databases that belong to the same sample.\
--   `DynLibDBassociation.txt` (for FTMS_neg reference) or `DynLibDBassociation2.txt` (for FTMS_pos reference): Add the COMPIDs of the reference subDB experiment.
-
-Upload these files in R using `Get_All_DynLib_files()`:
-finlist[[5]] "Assoc_COMPID" #DynLibDBassociation.txt 
-finlist[[5]][,1] #COMPIDnegFT
-finlist[[5]][,2] #COMPIDposFT 
-finlist[[5]][,3] #COMPIDnegSynapt 
-finlist[[5]][,4] #COMPIDposSynapt 
-finlist[[5]][,5] #COMPIDnegMSE 
-finlist[[5]][,6] #COMPIDposMSE
-
-finlist[[6]] "Assoc_COMPID2" #DynLibDBassociation2.txt
-
-finlist[[8]] "Assoc_EXPID" #subDBexperiment.txt 
-finlist[[8]][,1] #Expid SYNPOS
-finlist[[8]][,2] #Expid SYNNEG 
-finlist[[8]][,3] #Expid FTNEG 
-finlist[[8]][,4] #Expid FTPOS 
-
-In `Aligning_FT_QTOF()`, these tables are uploaded as:
-Assoc<-finlist[[5]]
-Assoc_EXPID_FTn<-strsplit(finlist[[8]][,3],",")
-
 
 `Aligning_FT_QTOF()` returns an updated Assoc table with aligned COMPIDS
 
@@ -158,7 +114,7 @@ Assoc_EXPID_FTn<-strsplit(finlist[[8]][,3],",")
 ```{r}
 FT_con <- dbConnect(SQLite(), FT_path)
 QTOF_con <- dbConnect(SQLite(), QTOF_path)
-fill <- FillAssocFTnQTOFn_SQL(FT_con, QTOF_con, assoc_path, expnr.ft, expnr.syn,
+fill <- FillAssocFTnQTOFn_SQL(FT_con, QTOF_con, assoc_path, FT_expnr, QTOF_expnr,
                                        cutoff = 1, rg_sql, lc.err = 1, err, minIon = 0.6,
                                        polarity_ft = 0, polarity_qtof = 0)
 ```
@@ -167,23 +123,48 @@ fill <- FillAssocFTnQTOFn_SQL(FT_con, QTOF_con, assoc_path, expnr.ft, expnr.syn,
 ```{r}
 
 
-expnr.ft <- 191
-FT_path <- "C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/FTMS/data/DYL_FLAX_FTMSneg.sqlite"
-QTOF_path <- "C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/QTOF/data/DYL_FLAX_QTOFneg.sqlite"
+
+FT_path <- "C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib/Similarity/FTMS/data/DYL_FLAX_FTMSneg.sqlite"
+QTOF_path <- "C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib/Similarity/QTOF/data/DYL_FLAX_QTOFneg.sqlite"
 
 assoc_path <- "C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib/New_Dynlib/data/combined_assoc.txt"
 
-Assoc_SQL <- Aligning_FT_QTOF_SQL(
+Assoc_SQL <-Aligning_FT_QTOF_SQL(
   FT_path = FT_path,
   QTOF_path = QTOF_path,
-  expnr.ft = 191,
-  expnr.syn = 38,
-  Assoc = assoc_path,  #
-  startpoint = 1
+  FT_expnr = 191,
+  QTOF_expnr = 38,
+  Assoc = assoc_path,
+  startpoint = 1,
+  save_assoc = FALSE
 )
+
 
                               
 ```
+
+
+```{r}
+
+tail(Assoc_SQL)
+
+```
+
+
+```{r}
+print(Assoc_SQL)
+```
+
+The number of new added alignment rows
+```{r}
+Assoc_before <- read.table(assoc_path, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+Assoc_before <- nrow(Assoc_before)
+Assoc_after <- nrow(Assoc_SQL)
+n_new <- Assoc_after - Assoc_before
+n_new
+```
+
+
 
 
 

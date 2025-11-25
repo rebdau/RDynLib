@@ -1,4 +1,4 @@
-Aligning_General_SQL <- function(FT_con, QTOF_con, expnr.ft, expnr.syn, err, t.ini) {
+Aligning_General_SQL <- function(FT_con, QTOF_con, FT_expnr, QTOF_expnr, err, t.ini) {
   library(RSQLite)
   
  
@@ -14,8 +14,8 @@ Aligning_General_SQL <- function(FT_con, QTOF_con, expnr.ft, expnr.syn, err, t.i
   syn <- syn_sql[, c("retention_time", "mass_measured", "compound_id", "expid", "name", "smiles", "nodename")]
   
 
-  ft.exp  <- ft[ft$expid == expnr.ft, ]
-  syn.exp <- syn[syn$expid == expnr.syn, ]
+  ft.exp  <- ft[ft$expid == FT_expnr, ]
+  syn.exp <- syn[syn$expid == QTOF_expnr, ]
   ft.exp.o <- ft.exp[order(ft.exp$retention_time), ]
   
 

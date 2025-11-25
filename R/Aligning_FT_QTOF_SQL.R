@@ -63,7 +63,7 @@ Aligning_FT_QTOF_SQL <- function(
     FT_path, QTOF_path, FT_expnr, QTOF_expnr, 
     Assoc = NULL, err = 0.02, t.ini = 5,
     lc.err = 1, rng = 2, minIon = 0.6, startpoint = 1,
-    save_assoc = FALSE 
+    save_assoc = FALSE, aggregated_Ft = FALSE, aggregated_QTOF = FALSE  
 ) {
 
   
@@ -120,23 +120,28 @@ Aligning_FT_QTOF_SQL <- function(
   polarity_qtof <- ifelse(qtof_mode == "neg", 0, 1)
   
   #Generate LCal and remove outliers
-  LCal <- Aligning_General_SQL(FT_con, QTOF_con, FT_expnr, QTOF_expnr, err, t.ini)
+  LCal <- Aligning_General_SQL(FT_con, QTOF_con, FT_expnr, QTOF_expnr, err, 
+                               t.ini)
   LCal <- matchFTSyn_SQL(LCal, FT_con, QTOF_con, minIon = minIon,
-                         polarity_ft = polarity_ft, polarity_qtof = polarity_qtof)
+                         polarity_ft = polarity_ft, polarity_qtof = polarity_qtof,
+                         aggregated_Ft = aggregated_Ft, 
+                         aggregated_QTOF = aggregated_QTOF)
   LCal <- RemoveOutliers(LCal, rng)
   
   #Regression
-  rg <- RegressionPie_LCalign(LCal, startpoint)
+  rg <- RegressionPie_LCalign_SQL(LCal, startpoint)
   PlotPie_LCalign(LCal, rg)
   #Fill Assoc
   Assoc_df <- FillAssocFTnQTOFn_SQL(
     FT_con = FT_con, QTOF_con = QTOF_con, Assoc = Assoc_df, FT_expnr = FT_expnr, QTOF_expnr = QTOF_expnr,
     cutoff = 1, rg = rg, lc.err = lc.err, err = err, minIon = minIon,
     polarity_ft = polarity_ft, polarity_qtof = polarity_qtof,
-    FT_path = FT_path, QTOF_path = QTOF_path
-  )
+    FT_path = FT_path, QTOF_path = QTOF_path, 
+    aggregated_Ft = aggregated_Ft, 
+    aggregated_QTOF = aggregated_QTOF)
   
-  message(sprintf("Number of new rows added: %d", n_new))
+  
+ 
 
   dbDisconnect(FT_con)
   dbDisconnect(QTOF_con)
@@ -148,3 +153,5 @@ Aligning_FT_QTOF_SQL <- function(
   
   return(Assoc_df)
 }
+
+
