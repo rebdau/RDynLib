@@ -45,6 +45,10 @@
 #' the minimum retention time for the first knot in piecewise regression.
 #'@param save_assoc `logical(1)` If true we add the alignment result to the
 #' Assoc text file.
+#'@param aggregated_Ft `logical(1)` If true the use of the aggregated ftms 
+#' spectra of all levels is involved.
+#'@param aggregated_QTOF `logical(1)` If true the use of the aggregated QTOF 
+#' spectra of all collision energies is involved.
 #'@return A `data.frame` containing the matched FT–QTOF compounds with columns:
 #' `ref_compid`: FTMS compound ID
 #' `target_compid`: QTOF compound ID
