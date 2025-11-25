@@ -1,0 +1,121 @@
+---
+title: "Untitled"
+format: html
+server: shiny
+---
+
+# Introduction
+
+In this document, we upload the existing DynLib library and RDynLib package and align DynLib subdatabases
+
+# Upload the RDynLib package
+
+All functions of the RDynLib package are in the R subfolder. By running `devtools::load_all`we can immediately use and test all functions in the RDynLib folder and subfolders.
+
+
+```{r}
+#| message: false
+
+#' Load required libraries
+library(devtools)
+#rm(list = c("convert_compid_assoc"))
+#` Uploading RDynLib: Load all functions of the RDynlib directory
+load_all()
+```
+
+```{r}
+# Select example experiment numbers
+expnr.ft <- 266
+expnr.syn <- 52
+
+# Optional parameters
+err <- 0.02
+t.ini <- 5
+
+#SQL databases paths
+FT_path <- "C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib/Similarity/FTMS/data/DYL_FLAX_FTMSneg.sqlite"
+QTOF_path <- "C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib/Similarity/QTOF/data/DYL_FLAX_QTOFneg.sqlite"
+assoc_path <- "C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib/New_Dynlib/data/combined_assoc.txt"
+FT_con <- DBI::dbConnect(RSQLite::SQLite(), FT_path)
+QTOF_con <- DBI::dbConnect(RSQLite::SQLite(), QTOF_path)
+  
+align_flax_SQL <- Aligning_General_SQL(FT_con, QTOF_con, expnr.ft, expnr.syn, err, t.ini)
+
+
+head(align_flax_SQL)
+nrow(align_flax_SQL)
+```
+
+
+## (2) Remove false positives based on spectral match
+The `matchFTSyn` function removes false positive FTm/z, QTOFm/z peak pairs by checking whether a certain percentage of the MS2 spectral peaks can be traced in the MS/MS spectrum. 
+By default, 60% of the MS2 peaks should be traced in the MS/MS spectrum as the MS2 spectrum is much less crowded.
+
+### Input
+
+```{r}
+LCal_sql_flax <- matchFTSyn_SQL(align_flax_SQL, FT_con, QTOF_con, minIon = 0.6,aggregated_Ft = TRUE, aggregated_QTOF = TRUE)
+head(LCal_sql_flax)
+nrow(LCal_sql_flax)
+```
+
+## (3) Remove outliers based on retention time difference
+The `RemoveOutliers` function 
+looks at the retention time difference between matched peaks (LCal[,6]);
+`rng` is the number of standard deviations that the retention time difference can deviate from the mean retention time difference:
+computes mean ± (rng × SD);
+removes all rows outside that range.
+
+```{r}
+LCal_sql_flax <- RemoveOutliers(LCal_sql_flax, rng = 2)
+head(LCal_sql_flax)
+nrow(LCal_sql_flax)
+```
+
+## (4) Regression
+The `RegressionPie_LCalign` function computes regression between FT and QTOF chromatograms. 
+Deviations from a straight curve might occur as different LC systems are involved. Therefore, a piecewise regression is performed including at most two knots. 
+
+By looking at the result from multiple experiments, robust regression
+was more accurate than traditional least squares. 
+The 'startpoint' allows to decide on the FT retention time from which regression should be started. 
+```{r}
+rg_LCal_sql_flax <- RegressionPie_LCalign_SQL(LCal_sql_flax, startpoint = 1)
+head(rg_LCal_sql_flax)
+```
+
+## (5) Plot Regression line
+Plot FT retention times (Y-axis; LCal[,2]) in function of Synapt retention times
+(X-axis; LCal[,4])
+
+```{r}
+PlotPie_LCalign(LCal_sql_flax,rg_LCal_sql_flax)
+```
+
+Calling the global alignment function:
+
+```{r}
+Assoc_SQL_flax <-Aligning_FT_QTOF_SQL(
+  FT_path = FT_path,
+  QTOF_path = QTOF_path,
+  FT_expnr =  266,
+  QTOF_expnr = 52,
+  startpoint = 1,
+  save_assoc = FALSE,
+   aggregated_Ft = TRUE, 
+  aggregated_QTOF = TRUE
+)
+```
+
+The number of added rows:
+```{r}
+n_before <- if (exists("Assoc_df")) nrow(Assoc_df) else 0
+n_after <- nrow(Assoc_SQL_flax)
+n_new <- n_after - n_before
+n_new
+```
+
+```{r}
+Assoc_SQL_flax
+```
+
