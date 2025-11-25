@@ -24,7 +24,7 @@ FillAssocFTnQTOFn_SQL <- function(
       "s.spectrum_type = 'assembled'"
     }
   } else {
-    # no spectrum_type column → no filtering
+    #if no spectrum_type column then no filtering
     ft_filter <- "1=1"
   }
   
