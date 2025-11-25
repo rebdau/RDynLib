@@ -26,7 +26,7 @@ matchFTSyn_SQL <- function(LCal, FT_con, QTOF_con, polarity_ft = 0,
       "s.spectrum_type = 'assembled'"
     }
   } else {
-    # no spectrum_type column → no filtering
+    # IF spectrum_type column then no filtering
     ft_filter <- "1=1"
   }
   
