@@ -1,2 +1,12 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+Similarity
+data
+scripts
+test
+.git
+.RDataTmp
+^.*\.html$
+dynlib-to-rforms-*
+.editorconfig
+.gitignore
