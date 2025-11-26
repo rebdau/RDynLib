@@ -27,6 +27,13 @@
 #' @param t.ini `numeric(1)`The number of neighboring peaks
 #'
 #' @return A data.frame representing the locally aligned features
+#' @importFrom DBI dbGetQuery
+#'
+#' @importFrom DBI dbConnect
+#'
+#' @importFrom DBI dbDisconnect
+#'
+#' @importFrom RSQLite SQLite
 #'
 #' @author Ahlam Mentag
 #'

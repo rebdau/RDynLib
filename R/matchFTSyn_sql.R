@@ -33,8 +33,11 @@
 #'
 #' @return A filtered version of `LCal`, keeping only MS2 supported matches.
 #'
-#'#' @import DBI
-#' @import RSQLite
+#' @importFrom DBI dbConnect
+#'
+#' @importFrom DBI dbDisconnect
+#'
+#' @importFrom RSQLite SQLite
 #' 
 #' @author Ahlam Mentag
 #'
