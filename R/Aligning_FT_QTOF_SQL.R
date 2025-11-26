@@ -13,10 +13,10 @@
 #' file if it's already given by the user otherwise we create a new one.
 #' Then calls a set of defined functions :
 #'
-#' - `Aligning_General_SQL()`: performs the local alignment, and adjust the mz
+#' - [Aligning_General_SQL()]: performs the local alignment, and adjust the mz
 #'   values if the alignment is between two different polarities.
 #'
-#' - `matchFTSyn_SQL(): removes the matches found by the previous function
+#' - `matchFTSyn_SQL()`: removes the matches found by the previous function
 #'   if they contain fewer than `minIon` matched peaks.
 #'
 #' - `RemoveOutliers()`: calculate the standard deviation in the rt difference
@@ -134,6 +134,8 @@ Aligning_FT_QTOF_SQL <- function(
 
   FT_con   <- dbConnect(SQLite(), FT_path)
   QTOF_con <- dbConnect(SQLite(), QTOF_path)
+  on.exit(dbDisconnect(FT_con))
+  on.exit(dbDisconnect(QTOF_con))
 
   #Detect polarity
   ft_mode  <- dbGetQuery(FT_con, sprintf("SELECT mode FROM experiment WHERE expid = %d", FT_expnr))$mode
@@ -167,9 +169,6 @@ Aligning_FT_QTOF_SQL <- function(
     FT_path = FT_path, QTOF_path = QTOF_path,
     aggregated_Ft = aggregated_Ft,
     aggregated_QTOF = aggregated_QTOF)
-
-  dbDisconnect(FT_con)
-  dbDisconnect(QTOF_con)
 
   #Save updated Assoc if requested
   if (save_assoc && !is.null(assoc_file)) {
