@@ -1,3 +1,82 @@
+#' @title Associate FT and QTOF features using SQL and MS2 matching
+#'
+#' @description
+#' `FillAssocFTnQTOFn_SQL()` finds associations between FTMS and QTOFMS
+#' compounds based on retention time alignment, MS2 peak similarity, and
+#' alignment rules. It updates and returns the association table (`Assoc`).
+#'
+#' @details
+#' The function:
+#' - loads FT and QTOF compounds from SQL databases,
+#' - computes expected RT alignment using regression parameters,
+#' - finds candidate matches using SQL-assisted search,
+#' - filters candidates using MS2 peak similarity,
+#' - appends validated associations to `Assoc`.
+#'
+#' @param FT_con `DBIConnection`  
+#'   A DBI connection object to the FT SQLite database.
+#'
+#' @param QTOF_con `DBIConnection`  
+#'   A DBI connection object to the QTOF SQLite database.
+#'
+#' @param Assoc `data.frame` A table storing previously detected associations. 
+#'   Will be filled with the new association if they are not already 
+#'   in the assoc table.
+#'
+#' @param FT_expnr `numeric(1)`  
+#'   The reference experiment number to load from the FTMS SQL database.
+#'
+#' @param QTOF_expnr `numeric(1)`  
+#'   Experiment number to load from the QTOF SQL database.
+#'
+#' @param cutoff `numeric(1)`  
+#'   Minimum retention time to consider for FT compounds.
+#'
+#' @param rg `numeric(6)`  
+#'   Regression coefficients for retention-time alignment.
+#'
+#' @param lc.err `numeric(1)`  
+#'   Allowed retention-time error window after regression transformation.
+#'
+#' @param err `numeric(1)`  
+#'   Error threshold for candidate match search (`Find_cand_matches_SQL`).
+#'
+#' @param minIon `numeric(1)`  
+#'    The minimum matching ions between spectra of peak pairs, which are found
+#'    after applying the regression model, and which are the final matching 
+#'    written in the Assoc table. (default `0.6`).
+#'
+#' @param polarity_ft `integer(1)`  
+#'   Polarity filter for FTMS MS2 spectra (0 or 1).
+#'
+#' @param polarity_qtof `integer(1)`  
+#'   Polarity filter for QTOF MS2 spectra (0 or 1).
+#'
+#' @param FT_path `character(1)`  
+#'   File path to the FTMS database .
+#'
+#' @param QTOF_path `character(1)`  
+#'   File path to the QTOF database.
+#'
+#' @param aggregated_Ft `logical(1)`  
+#'   Whether to use aggregated FTMS spectra.
+#'
+#' @param aggregated_QTOF `logical(1)`  
+#'   Whether to use aggregated QTOF MS2 spectra.
+#'
+#' @return `data.frame`  
+#'   The updated association table with new FTMS–QTOF matches appended.
+#'
+#' @importFrom DBI dbConnect
+#'
+#' @importFrom DBI dbDisconnect
+#'
+#' @importFrom RSQLite SQLite
+#'
+#' @author Ahlam Mentag
+#'
+#' @export
+
 FillAssocFTnQTOFn_SQL <- function(
     FT_con, QTOF_con, Assoc, FT_expnr, QTOF_expnr,
     cutoff, rg, lc.err, err, minIon = 0.6,
