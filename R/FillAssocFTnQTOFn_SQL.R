@@ -44,7 +44,7 @@
 #' @param minIon `numeric(1)`  
 #'    The minimum matching ions between spectra of peak pairs, which are found
 #'    after applying the regression model, and which are the final matching 
-#'    written in the Assoc table. (default `0.6`).
+#'    written in the Assoc table. (default `0.02`).
 #'
 #' @param polarity_ft `integer(1)`  
 #'   Polarity filter for FTMS MS2 spectra (0 or 1).
@@ -79,7 +79,7 @@
 
 FillAssocFTnQTOFn_SQL <- function(
     FT_con, QTOF_con, Assoc, FT_expnr, QTOF_expnr,
-    cutoff, rg, lc.err, err, minIon = 0.6,
+    cutoff, rg, lc.err, err, minIon = 0.02,
     polarity_ft = 0, polarity_qtof = 0,
     FT_path, QTOF_path,  aggregated_Ft = FALSE, aggregated_QTOF = FALSE
 ) {
