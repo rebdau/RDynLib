@@ -51,9 +51,12 @@
 #' @param rng `numeric(1)` used in `RemoveOutliers()` refers to the number of
 #'        standard  deviations used to define the outlier cutoff.
 #'
-#' @param minIon `numeric(1)` Minimum number of matched peaks required to
-#'        consider a valid match. Matches with fewer than `minIon` shared
-#'        ions are discarded.
+#' @param minIon `numeric(1)`  
+#'    The minimum matching ions between spectra of peak pairs, which are found
+#'    after applying the regression model, and which are the final matching 
+#'    written in the Assoc table. (default `0.01`).
+#'
+#' @param minPeaks Numeric. Minimum MS2 matching ratio required.
 #'
 #' @param startpoint `numeric(1)` used in `RegressionPie_LCalign()` refers to
 #'        the minimum retention time for the first knot in piecewise regression.
@@ -93,7 +96,7 @@
 Aligning_FT_QTOF_SQL <- function(
     FT_path, QTOF_path, FT_expnr, QTOF_expnr,
     Assoc = NULL, err = 0.02, t.ini = 5,
-    lc.err = 1, rng = 2, minIon = 0.6, startpoint = 1,
+    lc.err = 1, rng = 2, minIon = 0.01, minPeaks = 0.6, startpoint = 1,
     save_assoc = FALSE, aggregated_Ft = FALSE, aggregated_QTOF = FALSE
 ) {
 
@@ -152,7 +155,7 @@ Aligning_FT_QTOF_SQL <- function(
   #Generate LCal and remove outliers
   LCal <- Aligning_General_SQL(FT_con, QTOF_con, FT_expnr, QTOF_expnr, err,
                                t.ini)
-  LCal <- matchFTSyn_SQL(LCal, FT_con, QTOF_con, minIon = minIon,
+  LCal <- matchFTSyn_SQL(LCal, FT_con, QTOF_con, minPeaks = minPeaks,
                          polarity_ft = polarity_ft, polarity_qtof = polarity_qtof,
                          aggregated_Ft = aggregated_Ft,
                          aggregated_QTOF = aggregated_QTOF)
