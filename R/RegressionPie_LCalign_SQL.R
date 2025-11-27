@@ -43,7 +43,7 @@
 
 
 RegressionPie_LCalign_SQL <- function(LCal, startpoint = 1) {
-
+  
   x <- as.numeric(LCal[, 2])  # FT retention times
   y <- as.numeric(LCal[, 4])  # Synapt retention times
   
@@ -63,7 +63,7 @@ RegressionPie_LCalign_SQL <- function(LCal, startpoint = 1) {
   knottime2 <- c(knottime2, 0)
   VarExp <- c(VarExp, summary(out)$adj.r.squared)
   
-
+  
   unique_x <- sort(unique(x[x >= startpoint]))
   
   # One-knot models
@@ -102,7 +102,7 @@ RegressionPie_LCalign_SQL <- function(LCal, startpoint = 1) {
   
   t1 <- ifelse(x > k1_best, x - k1_best, 0)
   t2 <- ifelse(x > k2_best, x - k2_best, 0)
-
+  
   library(MASS)
   
   if (k1_best == 0 && k2_best == 0) {
