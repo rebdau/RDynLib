@@ -54,7 +54,8 @@ By default, 60% of the MS2 peaks should be traced in the MS/MS spectrum as the M
 ### Input
 
 ```{r}
-LCal_sql_flax <- matchFTSyn_SQL(align_flax_SQL, FT_con, QTOF_con, minIon = 0.6,aggregated_Ft = TRUE, aggregated_QTOF = TRUE)
+library(DBI)
+LCal_sql_flax <- matchFTSyn_SQL(align_flax_SQL, FT_con, QTOF_con, minPeaks = 0.4 ,aggregated_Ft = TRUE, aggregated_QTOF = TRUE)
 head(LCal_sql_flax)
 nrow(LCal_sql_flax)
 ```
@@ -80,8 +81,9 @@ By looking at the result from multiple experiments, robust regression
 was more accurate than traditional least squares. 
 The 'startpoint' allows to decide on the FT retention time from which regression should be started. 
 ```{r}
-rg_LCal_sql_flax <- RegressionPie_LCalign_SQL(LCal_sql_flax, startpoint = 1)
-head(rg_LCal_sql_flax)
+LCal_sql_flax_rg <- RegressionPie_LCalign_SQL(LCal_sql_flax)
+
+head(rg)
 ```
 
 ## (5) Plot Regression line
@@ -89,8 +91,21 @@ Plot FT retention times (Y-axis; LCal[,2]) in function of Synapt retention times
 (X-axis; LCal[,4])
 
 ```{r}
-PlotPie_LCalign(LCal_sql_flax,rg_LCal_sql_flax)
+PlotPie_LCalign(LCal_sql_flax,LCal_sql_flax_rg)
 ```
+
+
+
+```{r}
+fill <- FillAssocFTnQTOFn_SQL(FT_con, QTOF_con,  FT_expnr =  266,
+  QTOF_expnr = 52, cutoff = 1, rg = LCal_sql_flax_rg, lc.err = 6, err  = 0.02, minIon = 0.2
+                                      ,FT_path = FT_path, QTOF_path = QTOF_path, polarity_ft = 0, polarity_qtof = 0,Assoc = NULL,aggregated_Ft = TRUE, 
+  aggregated_QTOF = TRUE)
+nrow(fill)
+fill
+```
+
+
 
 Calling the global alignment function:
 
@@ -102,8 +117,12 @@ Assoc_SQL_flax <-Aligning_FT_QTOF_SQL(
   QTOF_expnr = 52,
   startpoint = 1,
   save_assoc = FALSE,
-   aggregated_Ft = TRUE, 
-  aggregated_QTOF = TRUE
+  aggregated_Ft = TRUE, 
+  aggregated_QTOF = TRUE,
+  minIon = 0.2,
+  minPeaks = 0.4,
+  
+  lc.err = 6
 )
 ```
 
@@ -115,7 +134,5 @@ n_new <- n_after - n_before
 n_new
 ```
 
-```{r}
-Assoc_SQL_flax
-```
+
 
