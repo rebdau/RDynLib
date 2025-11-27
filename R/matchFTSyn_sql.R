@@ -11,7 +11,7 @@
 #' - Computes MS2 peak overlap for each FT–QTOF candidate pair
 #' - Removes pairs with less matched peaks based on a threshold
 #'
-#' @param LCal A data.frame returned by `Aligning_General_SQL()` function.
+#' @param LCal `data.frame` A data.frame returned by `Aligning_General_SQL()` function.
 #' 
 #' @param FT_con `character(1)` A DBI connection object 
 #' to the FTMS SQLite database (the reference database).
@@ -25,7 +25,7 @@
 #' @param polarity_qtof `numeric(1)`Integer (0 or 1), refers to the polarity 
 #' of the qtof experiment to align.
 #' 
-#' @param minIon Numeric. Minimum MS2 matching ratio required.
+#' @param minPeaks Numeric. Minimum MS2 matching ratio required.
 #' 
 #' @param aggregated_Ft `logical(1)` Use aggregated FTMS spectra.
 #' 
@@ -39,11 +39,15 @@
 #'
 #' @importFrom RSQLite SQLite
 #' 
+#' @importFrom DBI dbGetQuery
+#' 
+#' @importMethodsFrom DBI dbListFields
+#' 
 #' @author Ahlam Mentag
 #'
 #' @export
 matchFTSyn_SQL <- function(LCal, FT_con, QTOF_con, polarity_ft = 0, 
-                           polarity_qtof = 0,minIon = 0.6, 
+                           polarity_qtof = 0,minPeaks = 0.6, 
                            aggregated_Ft = FALSE, aggregated_QTOF = FALSE) {
   
   
@@ -158,7 +162,7 @@ matchFTSyn_SQL <- function(LCal, FT_con, QTOF_con, polarity_ft = 0,
     # Compute matching peak ratio
     same_ion <- sum(ms2ion %in% msmsion)
     
-    if (same_ion / length(ms2ion) < minIon) {
+    if (same_ion / length(ms2ion) < minPeaks) {
       LCal <- LCal[-i, ]
       next
     }
