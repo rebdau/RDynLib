@@ -40,8 +40,6 @@
 #' @import MASS
 #'
 #' @export
-
-
 RegressionPie_LCalign_SQL <- function(LCal, startpoint = 1) {
   
   x <- as.numeric(LCal[, 2])  # FT retention times
