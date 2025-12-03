@@ -1,9 +1,8 @@
-#' @title Aligning compounds from the same instrument with the same/different 
-#'        polarities
+#' @title Aligning compounds from the same instrument 
 #'
 #' @description
 #'
-#' `Aligning_FTn_FTp_SQL()` can align FTneg-FTpos or QTOFneg-QTOFpos, but the
+#' `Aligning_FTn_FTp_SQL()` can align FTneg-FTpos or QTOFneg-QTOFpos, the
 #'  reference experiment is always the one with the negative ionization mode 
 #'  and adds the aligned compounds to a given text file.
 #'
@@ -66,9 +65,10 @@
 #' @param save_assoc `logical(1)` If true we add the alignment result to the
 #'        Assoc text file.
 #'
-#' @return A `data.frame` containing the matched FT–QTOF compounds with columns:
-#' - `ref_compid`: FTMS compound ID
-#' - `target_compid`: QTOF compound ID
+#' @return A `data.frame` containing the matched FTMSn-FTMSp or QTOFn-QTOFp 
+#'         compounds with columns:
+#' - `ref_compid`: FTMSneg or QTOFneg compound ID
+#' - `target_compid`: FTMSpos or QTOFpos compound ID
 #' - `ref_database`: filename of the reference database
 #' - `target_database`: filename of the database to align with.
 #' This table is updated with new associations found by the alignment procedure.
@@ -151,11 +151,9 @@ Aligning_FTn_FTp_SQL <- function(
   LCal <- Aligning_General_SQL(FT_con = FTn_con, QTOF_con = FTp_con, 
                                FT_expnr = FTn_expnr, QTOF_expnr= FTp_expnr, err,
                                t.ini)
-  LCal <- matchFTSyn_SQL(LCal, FT_con = FTn_con, QTOF_con = FTp_con, 
-                         minPeaks = minPeaks, polarity_ft = polarity_ft,
-                         polarity_qtof = polarity_ftp,
-                         aggregated_Ft = FALSE,
-                         aggregated_QTOF = FALSE)
+  LCal <- matchNegPos_SQL(LCal, FT_con = FTn_con, QTOF_con = FTp_con, 
+                         minPeaks = minPeaks, polarity_ftn = polarity_ftn,
+                         polarity_ftp = polarity_ftp)
   LCal <- RemoveOutliers(LCal, rng)
   
   #Regression

@@ -11,7 +11,8 @@
 #' - Computes MS2 peak overlap for each FT–QTOF candidate pair
 #' - Removes pairs with less matched peaks based on a threshold
 #'
-#' @param LCal `data.frame` A data.frame returned by `Aligning_General_SQL()` function.
+#' @param LCal 
+#' `data.frame` A data.frame returned by `Aligning_General_SQL()` function.
 #' 
 #' @param FT_con `character(1)` A DBI connection object 
 #' to the FTMS SQLite database (the reference database).
@@ -25,7 +26,7 @@
 #' @param polarity_qtof `numeric(1)`Integer (0 or 1), refers to the polarity 
 #' of the qtof experiment to align.
 #' 
-#' @param minPeaks Numeric. Minimum MS2 matching ratio required.
+#' @param minPeaks `Numeric(1)` Minimum MS2 matching ratio required.
 #' 
 #' @param aggregated_Ft `logical(1)` Use aggregated FTMS spectra.
 #' 
