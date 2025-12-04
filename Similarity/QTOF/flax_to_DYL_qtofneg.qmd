@@ -10,7 +10,10 @@ author: "Ahlam Mentag, Johannes Rainer"
 ## Shiny Documents
 
 This quarto document represents the full workflow to add qtofneg flax to Dynlib
-sql database, and then to a Combpdb and spectra Objects
+sql database, and then to a Combpdb and spectra Objects.
+The retention times in Dynlib are in minutes, but in flax data are in seconds.
+In the following workflow while adding flax to Dynlib we will unify the units
+and convert the retention times of flax data to minutes.
 
 ```{r}
 library(Spectra)
@@ -49,17 +52,28 @@ con_merged <- dbConnect(SQLite(), "data/DYL_FLAX_QTOFneg.sqlite")
 ```{r}
 merge_databases <- function(main_db, add_db, output_db) {
   
-  #Connect to databases
+  # Connect to databases
   con_main <- dbConnect(SQLite(), main_db)
   con_add  <- dbConnect(SQLite(), add_db)
   con_out  <- dbConnect(SQLite(), output_db)
   
   tables_main <- setdiff(dbListTables(con_main), "sqlite_sequence")
   tables_add  <- setdiff(dbListTables(con_add), "sqlite_sequence")
-  #intersect the columns of both databases
+  
+  # Intersect the columns of both databases
   common_tables <- intersect(tolower(tables_main), tolower(tables_add))
   
-  #Compute ID shift
+  # ID shifting function
+  shift_ids <- function(df, exp_shift, spectrum_shift, peak_shift, compound_shift) {
+    if ("expid" %in% names(df))        df$expid       <- as.integer(df$expid) + exp_shift
+    if ("spectrum_id" %in% names(df))  df$spectrum_id <- as.integer(df$spectrum_id) + spectrum_shift
+    if ("peak_id" %in% names(df))      df$peak_id     <- as.integer(df$peak_id) + peak_shift
+    if ("compound_id" %in% names(df))  df$compound_id <- as.character(as.integer(df$compound_id) + compound_shift)
+    if ("subsid" %in% names(df))       df$subsid      <- as.integer(df$subsid)
+    return(df)
+  }
+  
+  # Compute ID shift
   compute_shift <- function(con_main, con_add, table, key) {
     if (!(table %in% tolower(tables_main)) || !(table %in% tolower(tables_add))) return(0)
     main_tbl <- dbReadTable(con_main, tables_main[tolower(tables_main) == table])
@@ -77,17 +91,7 @@ merge_databases <- function(main_db, add_db, output_db) {
   spectrum_shift <- compute_shift(con_main, con_add, "msms_spectrum", "spectrum_id")
   peak_shift     <- compute_shift(con_main, con_add, "msms_spectrum_peak", "peak_id")
   
-  #ID shifting function
-  shift_ids <- function(df) {
-    if ("expid" %in% names(df))        df$expid       <- as.integer(df$expid) + exp_shift
-    if ("spectrum_id" %in% names(df))  df$spectrum_id <- as.integer(df$spectrum_id) + spectrum_shift
-    if ("peak_id" %in% names(df))      df$peak_id     <- as.integer(df$peak_id) + peak_shift
-    if ("compound_id" %in% names(df))  df$compound_id <- as.character(as.integer(df$compound_id) + compound_shift)
-    if ("subsid" %in% names(df))       df$subsid      <- as.integer(df$subsid)
-    return(df)
-  }
-  
-  #Fix column types
+  # Fix column types
   fix_column_types <- function(df, table_name) {
     if (nrow(df) == 0) return(df)
     
@@ -160,12 +164,22 @@ merge_databases <- function(main_db, add_db, output_db) {
     return(df)
   }
   
-  #Merge common tables 
+  # Merge common tables
   for(tbl_name in common_tables) {
     tbl_main <- dbReadTable(con_main, tables_main[tolower(tables_main) == tbl_name])
     tbl_add  <- dbReadTable(con_add, tables_add[tolower(tables_add) == tbl_name])
     
-    if(nrow(tbl_add) > 0) tbl_add <- shift_ids(tbl_add)
+    if(nrow(tbl_add) > 0) {
+      tbl_add <- shift_ids(tbl_add, exp_shift, spectrum_shift, peak_shift, compound_shift)
+      
+      # Convert times to minutes in add_db
+      if ("rtime" %in% names(tbl_add)) {
+        tbl_add$rtime <- as.numeric(tbl_add$rtime) / 60
+      }
+      if ("retention_time" %in% names(tbl_add)) {
+        tbl_add$retention_time <- as.numeric(tbl_add$retention_time) / 60
+      }
+    }
     
     all_cols <- union(names(tbl_main), names(tbl_add))
     for(col in setdiff(all_cols, names(tbl_main))) tbl_main[[col]] <- rep(NA, nrow(tbl_main))
@@ -178,7 +192,6 @@ merge_databases <- function(main_db, add_db, output_db) {
     tbl_add[]  <- lapply(tbl_add, as.character)
     
     merged_tbl <- bind_rows(tbl_main, tbl_add)
-    
     merged_tbl <- fix_column_types(merged_tbl, tbl_name)
     
     dbWriteTable(con_out, tbl_name, merged_tbl, overwrite = TRUE)
@@ -194,7 +207,16 @@ merge_databases <- function(main_db, add_db, output_db) {
   
   for(tbl_name in setdiff(tables_add, tables_main)) {
     tbl <- dbReadTable(con_add, tbl_name)
-    if(nrow(tbl) > 0) tbl <- shift_ids(tbl)
+    if(nrow(tbl) > 0) tbl <- shift_ids(tbl, exp_shift, spectrum_shift, peak_shift, compound_shift)
+    
+    # Convert times to minutes in add_db
+    if ("rtime" %in% names(tbl)) {
+      tbl$rtime <- as.numeric(tbl$rtime) / 60
+    }
+    if ("retention_time" %in% names(tbl)) {
+      tbl$retention_time <- as.numeric(tbl$retention_time) / 60
+    }
+    
     tbl <- fix_column_types(tbl, tbl_name)
     dbWriteTable(con_out, tbl_name, tbl, overwrite = TRUE)
   }
@@ -203,8 +225,8 @@ merge_databases <- function(main_db, add_db, output_db) {
   dbDisconnect(con_add)
   dbDisconnect(con_out)
   
+  cat("Database merge completed. Output saved to:", output_db, "\n")
 }
-
 
 
 
@@ -306,6 +328,6 @@ sp <- Spectra(cdb)
 
 
 ```{r}
-spectraData(sp, columns = c("msLevel", "compound_id", "nodename", "rtime", "retention_time"))
+spectraData(sp, columns = c("msLevel", "compound_id", "nodename", "rtime", "retention_time", "spectrum_type"))
 ```
 
