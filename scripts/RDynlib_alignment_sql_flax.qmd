@@ -1,16 +1,23 @@
 ---
-title: "Untitled"
-format: html
-server: shiny
+title: "Aligning flax ftmsneg with qtofneg of flax using the updated sql functions "
+format:
+  html:
+    toc: true
+    self-contained: true
+author: "Ahlam Mentag"
 ---
 
 # Introduction
 
-In this document, we upload the existing DynLib library and RDynLib package and align DynLib subdatabases
+In this document, we upload the existing DynLib library and RDynLib package
+and align DynLib the 2 experiments from qtof and ftms flax data, we assume that
+the retention times are in minutes, in both dynlib and flax data.
 
 # Upload the RDynLib package
 
-All functions of the RDynLib package are in the R subfolder. By running `devtools::load_all`we can immediately use and test all functions in the RDynLib folder and subfolders.
+All functions of the RDynLib package are in the R subfolder. 
+By running `devtools::load_all`we can immediately use and test all functions
+in the RDynLib folder and subfolders.
 
 
 ```{r}
@@ -55,9 +62,9 @@ By default, 60% of the MS2 peaks should be traced in the MS/MS spectrum as the M
 
 ```{r}
 library(DBI)
-LCal_sql_flax <- matchFTSyn_SQL(align_flax_SQL, FT_con, QTOF_con, minPeaks = 0.4 ,aggregated_Ft = TRUE, aggregated_QTOF = TRUE)
-head(LCal_sql_flax)
-nrow(LCal_sql_flax)
+match_sql_flax <- matchFTSyn_SQL(align_flax_SQL, FT_con, QTOF_con, minPeaks = 0.4 ,aggregated_Ft = TRUE, aggregated_QTOF = TRUE)
+head(match_sql_flax)
+nrow(match_sql_flax)
 ```
 
 ## (3) Remove outliers based on retention time difference
@@ -68,7 +75,7 @@ computes mean ± (rng × SD);
 removes all rows outside that range.
 
 ```{r}
-LCal_sql_flax <- RemoveOutliers(LCal_sql_flax, rng = 2)
+LCal_sql_flax <- RemoveOutliers(match_sql_flax, rng = 2)
 head(LCal_sql_flax)
 nrow(LCal_sql_flax)
 ```
@@ -83,7 +90,7 @@ The 'startpoint' allows to decide on the FT retention time from which regression
 ```{r}
 LCal_sql_flax_rg <- RegressionPie_LCalign_SQL(LCal_sql_flax)
 
-head(rg)
+head(LCal_sql_flax_rg)
 ```
 
 ## (5) Plot Regression line
@@ -98,16 +105,17 @@ PlotPie_LCalign(LCal_sql_flax,LCal_sql_flax_rg)
 
 ```{r}
 fill <- FillAssocFTnQTOFn_SQL(FT_con, QTOF_con,  FT_expnr =  266,
-  QTOF_expnr = 52, cutoff = 1, rg = LCal_sql_flax_rg, lc.err = 6, err  = 0.02, minIon = 0.2
-                                      ,FT_path = FT_path, QTOF_path = QTOF_path, polarity_ft = 0, polarity_qtof = 0,Assoc = NULL,aggregated_Ft = TRUE, 
-  aggregated_QTOF = TRUE)
+  QTOF_expnr = 52, cutoff = 1, rg = LCal_sql_flax_rg, lc.err = 1, err  = 0.02, minIon = 0.2
+                                      ,FT_path = FT_path, QTOF_path = QTOF_path, polarity_ft = 0, polarity_qtof = 0,Assoc = NULL,aggregated_Ft = FALSE, 
+  aggregated_QTOF = FALSE)
 nrow(fill)
 fill
 ```
 
 
 
-Calling the global alignment function:
+Calling the global alignment function, we set lc.err to 1 minutes.
+the retention times are in minutes.
 
 ```{r}
 Assoc_SQL_flax <-Aligning_FT_QTOF_SQL(
@@ -117,12 +125,12 @@ Assoc_SQL_flax <-Aligning_FT_QTOF_SQL(
   QTOF_expnr = 52,
   startpoint = 1,
   save_assoc = FALSE,
-  aggregated_Ft = TRUE, 
+  aggregated_Ft = FALSE, 
   aggregated_QTOF = TRUE,
   minIon = 0.2,
   minPeaks = 0.4,
   
-  lc.err = 6
+  lc.err = 1
 )
 ```
 
