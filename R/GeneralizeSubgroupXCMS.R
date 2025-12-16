@@ -1,6 +1,8 @@
 GeneralizeSubgroupXCMS<-function(XCMS){
-	CON.col<-dim(XCMS)[2]-1
-	SUBGRP.col<-dim(XCMS)[2]
+  #Ahlam: Here I modified the columns access
+  CON.col <- which(colnames(XCMS) == "CON.new")
+  SUBGRP.col <- which(colnames(XCMS) == "subgrp")
+  
 	o<-order(XCMS[,CON.col],XCMS[,SUBGRP.col])
 	XCMS<-XCMS[o,]
 	CON<-XCMS[,CON.col]
