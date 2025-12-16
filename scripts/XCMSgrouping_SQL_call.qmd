@@ -1,0 +1,165 @@
+---
+title: "Grouping and annotation of feature spectra"
+format: html
+server: shiny
+author: "Ahlam Mentag"
+---
+
+## Shiny Documents
+
+In this quarto document we perform the grouping and annotation of the flax ftms 
+and qtof flax features by calling the XCMSgrouping_SQL_call() function, and add
+the grouping and annotation columns to the ms_compound table in the sql database.
+
+Importing libraries
+```{r}
+library(xcms)
+library(MsExperiment)
+library(Spectra)
+library(readxl)
+library(pander)
+library(dplyr)
+```
+
+```{r}
+setwd("C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib/R")
+#' Load required libraries
+library(devtools)
+#rm(list = c("convert_compid_assoc"))
+#` Uploading RDynLib: Load all functions of the RDynlib directory
+load_all()
+```
+
+Here we load the xcms preprocessed ftms and qtof flax objects:
+```{r}
+load("C:/Users/amentag/Desktop/Rcodes/RDynLib_ftms/data/ftms.RData")
+load("C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib_qtof/data/qtof.RData")
+```
+
+
+
+```{r}
+#' assuming flax_ftms is the result object from xcms preprocessing,
+#' add a columns "fc" with the sample grouping as used/defined by XCMSgrouping 
+sampleData(ftms)$fc <- c(1,2,3,4,5,1,2,3,4,5)
+sampleData(qtof)$fc <- c(1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6)
+```
+
+```{r}
+sampleData(qtof)
+```
+
+```{r}
+sampleData(ftms)
+```
+
+```{r}
+featureDefinitions(ftms)
+```
+
+```{r}
+ftms2 <- XCMSgrouping_SQL(ftms, tR = 1, y10 = 1, y20 = 0.8, y11 = 46.0)
+```
+
+```{r}
+fd <- featureDefinitions(ftms2)
+```
+
+```{r}
+original_cols <- c("mzmed","mzmin","mzmax","rtmed","rtmin","rtmax",
+    "npeaks","S1","S9","peakidx","ms_level") 
+new_cols <- setdiff(colnames(fd), original_cols)
+new_cols
+```
+
+```{r}
+summary(fd[, new_cols])
+```
+
+
+```{r}
+table(fd$subgrp, useNA = "ifany")
+```
+
+ftms subgrp column contains 3 groups
+
+```{r}
+sapply(fd[, new_cols], function(x) length(unique(x)))
+
+```
+
+
+```{r}
+head(fd[, new_cols], 10)
+
+```
+
+```{r}
+table(fd$anno.1)
+```
+
+This dataset contains 69 adduct annd 5867 ann
+
+save the final `XCMSExperiment` with the new columns of grouping and annotation
+```{r}
+save(ftms2, file = "C:/Users/amentag/Desktop/Rcodes/RDynLib_ftms/data/ftms2.RData")
+```
+
+grouping and annotating qtof features
+
+```{r}
+qtof2 <- XCMSgrouping_SQL(qtof, tR = 1, y10 = 1, y20 = 0.8, y11 = 46.0)
+```
+
+```{r}
+fdq <- featureDefinitions(qtof2)
+```
+
+
+```{r}
+original_cols <- c("mzmed","mzmin","mzmax","rtmed","rtmin","rtmax",
+    "npeaks", "S1Ra", "S1Rb", "S1Rc", "S9Ra", "S9Rb", "S9Rc", "peakidx", "ms_level") 
+new_cols <- setdiff(colnames(fdq), original_cols)
+new_cols
+```
+
+```{r}
+summary(fdq[, new_cols])
+```
+
+
+```{r}
+table(fdq$subgrp, useNA = "ifany")
+```
+
+ftms subgrp column contains 3 groups
+
+```{r}
+sapply(fdq[, new_cols], function(x) length(unique(x)))
+
+```
+
+
+```{r}
+head(fdq[, new_cols], 10)
+
+```
+
+
+```{r}
+table(fdq$anno.1)
+```
+
+this data cantains 3487 adduct and 24380 in anno.1 column
+
+```{r}
+table(fdq$anno.2)
+```
+
+this data cantains 27864 ann and 3 dimer in anno.2 column
+
+save the final `XCMSExperiment` with the new columns of grouping and annotation
+```{r}
+save(qtof2, file = "C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib_qtof/data/qtof2.RData")
+```
+
