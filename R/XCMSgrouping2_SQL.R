@@ -43,7 +43,8 @@ XCMSgrouping2_SQL <- function(x, adjPeak = 1, mode = NULL) {
   dat$name <- .create_name(dat$mzmed, dat$rtmed)
   
   ## Spectra & MS2 peaks
-  s <- spectra(x)
+  s <- featureSpectra(x)
+  
   ms2.ft <- peaksData(s)
   spd <- spectraData(s)
   
@@ -55,7 +56,7 @@ XCMSgrouping2_SQL <- function(x, adjPeak = 1, mode = NULL) {
   ## ISF detection
   XCMS4 <- AutomFindingISF_SQL(dat, spd, ms2.ft)
   
-  ## Downstream logic unchanged
+
   XCMS4 <- ConvertXCMS4(XCMS4)
   XCMS4 <- SearchCombinat(XCMS4, adjPeak, mode)
   

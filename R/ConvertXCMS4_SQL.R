@@ -31,62 +31,54 @@
 #' @author Ahlam Mentag
 #'
 #' @export  
-ConvertXCMS4_SQL <- function(XCMS4) {
+ConvertXCMS4 <- function(XCMS4) {
   
-  ## Mean abundance (mean RT )
   MeAb <- rep(NA_real_, nrow(XCMS4))
   
-  ## Peak group column
-  pkcol <- "CON.new"
-
-  subcol <- "SubGrp"
-
-  rtcol <- "rtmed"
+  # Column names
+  pkcol <- "CON.new"   # peak group
+  rtcol <- "rtmed"     # median RT
+  subcol <- "subgrp"   # subgroup
   
-  ## Singletons
+  # Singletons
   Singlet <- which(as.integer(XCMS4[[pkcol]]) == 1)
   MeAb[Singlet] <- XCMS4[[rtcol]][Singlet]
   
-  ## Other peak groups
+  # Other peak groups
   i <- 2
   while (length(which(XCMS4[[pkcol]] %in% i)) != 0) {
-    
     PkGrp <- which(XCMS4[[pkcol]] %in% i)
-    RtAve <- mean(XCMS4[[rtcol]][PkGrp], na.rm = TRUE)
+    RtAve <- mean(XCMS4[[rtcol]][PkGrp])
     MeAb[PkGrp] <- RtAve
-    
     i <- i + 1
   }
   
-  ## Add MeAb
+  # Add MeAb column
   XCMS4$MeAb <- MeAb
   
-  ## Order by MeAb
+  # Order by MeAb
   XCMS4 <- XCMS4[order(XCMS4$MeAb), ]
   
-  ## Corrected peak group index
+  # Compute CorrPkGrp
   CorrPkGrp <- rep(NA_integer_, nrow(XCMS4))
   CorrPkGrp[1:2] <- c(1, 2)
   
   i <- 2
   while (i < nrow(XCMS4)) {
-    
     j <- i + 1
-    
-    if (
-      (XCMS4[[subcol]][j] == 1) |
-      (XCMS4[[subcol]][j] != XCMS4[[subcol]][i])
-    ) {
+    if ((XCMS4[[subcol]][j] == 1) | (XCMS4[[subcol]][j] != XCMS4[[subcol]][i])) {
       CorrPkGrp[j] <- CorrPkGrp[i] + 1
     } else {
       CorrPkGrp[j] <- CorrPkGrp[i]
     }
-    
     i <- i + 1
   }
   
-  ## Add corrected group
   XCMS4$CorrPkGrp <- CorrPkGrp
   
   return(XCMS4)
 }
+
+
+
+ 

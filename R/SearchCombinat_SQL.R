@@ -42,11 +42,11 @@ SearchCombinat_SQL <- function(XCMS4, adjPeak, mode) {
   ## Proton mass correction
   prtn <- if (mode == "neg") 1.0073 else -1.0073
   
-  ## Ensure feature_id exists
-  if (!"feature_id" %in% colnames(XCMS4)) {
-    XCMS4$feature_id <- rownames(XCMS4)
-  }
-  
+  # ## Ensure feature_id exists
+  # if (!"feature_id" %in% colnames(XCMS4)) {
+  #   XCMS4$feature_id <- rownames(XCMS4)
+  # }
+  # 
   ## Compute MS1 neutral mass proxy
   XCMS4$massMS1 <- as.integer(round((XCMS4$mzmed + prtn) * 100, 2))
   
@@ -116,3 +116,5 @@ SearchCombinat_SQL <- function(XCMS4, adjPeak, mode) {
   
   return(XCMS4)
 }
+
+ 
