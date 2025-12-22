@@ -8,8 +8,9 @@ author: "Ahlam Mentag"
 ## Shiny Documents
 
 In this quarto document we perform the grouping and annotation of the flax ftms 
-and qtof flax features by calling the XCMSgrouping_SQL_call() function, and add
-the grouping and annotation columns to the ms_compound table in the sql database.
+and qtof flax features by calling the XCMSgrouping_SQL() and XCMSgrouping2_SQL()
+functions, in order to add the grouping and annotation columns to the  
+ms_compound table in the sql database.
 
 Importing libraries
 ```{r}
@@ -98,12 +99,44 @@ head(fd[, new_cols], 10)
 table(fd$anno.1)
 ```
 
-This dataset contains 69 adduct annd 5867 ann
+This dataset contains 69 adduct and 5867 ann
 
 save the final `XCMSExperiment` with the new columns of grouping and annotation
 ```{r}
 save(ftms2, file = "C:/Users/amentag/Desktop/Rcodes/RDynLib_ftms/data/ftms2.RData")
 ```
+
+```{r}
+load("C:/Users/amentag/Desktop/Rcodes/RDynLib_ftms/data/ftms2.RData")
+```
+
+Using `XCMSgrouping2()` on the ftms2 object to add/update additional information to the 
+`MSExperiment` object:
+
+```{r}
+ftms_grp <- XCMSgrouping2_SQL(ftms2, adjPeak = 1)
+```
+
+Checking the new columns:
+```{r}
+fdf <- featureDefinitions(ftms_grp)
+```
+
+```{r}
+table(fdf$isf)
+```
+
+```{r}
+table(fdf$Comb)
+```
+there are 7 rows with values in Comb
+ 
+Save the new object:
+
+```{r}
+save(ftms_grp, file = "C:/Users/amentag/Desktop/Rcodes/RDynLib_ftms/data/ftms_grp.RData")
+```
+
 
 grouping and annotating qtof features
 
@@ -150,16 +183,48 @@ head(fdq[, new_cols], 10)
 table(fdq$anno.1)
 ```
 
-this data cantains 3487 adduct and 24380 in anno.1 column
+this data contains 3487 adduct and 24380 in anno.1 column
 
 ```{r}
 table(fdq$anno.2)
 ```
 
-this data cantains 27864 ann and 3 dimer in anno.2 column
+this data contains 27864 ann and 3 dimer in anno.2 column
 
 save the final `XCMSExperiment` with the new columns of grouping and annotation
 ```{r}
 save(qtof2, file = "C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib_qtof/data/qtof2.RData")
+```
+
+```{r}
+load("C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib_qtof/data/qtof2.RData")
+```
+
+
+Using `XCMSgrouping2()` on the qtof2 object to add/update additional information to the 
+`MSExperiment` object:
+
+```{r}
+qtof_grp <- XCMSgrouping2_SQL(qtof2, adjPeak = 1)
+```
+
+Checking the new columns:
+```{r}
+fdq_grp <- featureDefinitions(qtof_grp)
+```
+
+```{r}
+table(fdq_grp$isf)
+```
+
+```{r}
+table(fdq_grp$Comb)
+```
+
+the Comb column of this data contains 3 row values
+Save the new object:
+
+```{r}
+save(qtof_grp, file = "C:/Users/amentag/Desktop/Rcodes/RDynLib_ftms/data/qtof_grp.RData")
 ```
 

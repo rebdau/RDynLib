@@ -22,10 +22,11 @@ in the RDynLib folder and subfolders.
 
 ```{r}
 #| message: false
-
+setwd("C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib/R")
 #' Load required libraries
 library(devtools)
-#rm(list = c("convert_compid_assoc"))
+library(DBI)
+rm(list = c("convert_compid_assoc"))
 #` Uploading RDynLib: Load all functions of the RDynlib directory
 load_all()
 ```
@@ -106,8 +107,8 @@ PlotPie_LCalign(LCal_sql_flax,LCal_sql_flax_rg)
 ```{r}
 fill <- FillAssocFTnQTOFn_SQL(FT_con, QTOF_con,  FT_expnr =  266,
   QTOF_expnr = 52, cutoff = 1, rg = LCal_sql_flax_rg, lc.err = 1, err  = 0.02, minIon = 0.2
-                                      ,FT_path = FT_path, QTOF_path = QTOF_path, polarity_ft = 0, polarity_qtof = 0,Assoc = NULL,aggregated_Ft = FALSE, 
-  aggregated_QTOF = FALSE)
+                                      ,FT_path = FT_path, QTOF_path = QTOF_path, polarity_ft = 0, polarity_qtof = 0,Assoc = NULL,aggregated_Ft = TRUE, 
+  aggregated_QTOF = TRUE)
 nrow(fill)
 fill
 ```
@@ -123,15 +124,16 @@ Assoc_SQL_flax <-Aligning_FT_QTOF_SQL(
   QTOF_path = QTOF_path,
   FT_expnr =  266,
   QTOF_expnr = 52,
+  Assoc = assoc_path,
   startpoint = 1,
-  save_assoc = FALSE,
-  aggregated_Ft = FALSE, 
+  save_assoc = TRUE,
+  aggregated_Ft = TRUE, 
   aggregated_QTOF = TRUE,
-  minIon = 0.2,
+  minIon = 0.4,
   minPeaks = 0.4,
-  
   lc.err = 1
 )
+nrow(Assoc_SQL_flax)
 ```
 
 The number of added rows:
