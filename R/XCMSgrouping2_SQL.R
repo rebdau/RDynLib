@@ -35,38 +35,50 @@
 #' @export         
 XCMSgrouping2_SQL <- function(x, adjPeak = 1, mode = NULL) {
   
-  ## Feature table
+
   dat <- featureDefinitions(x)
   dat$feature_id <- rownames(dat)
   
-  ## Create names (same as before)
   dat$name <- .create_name(dat$mzmed, dat$rtmed)
   
-  ## Spectra & MS2 peaks
+
   s <- featureSpectra(x)
   
-  ms2.ft <- peaksData(s)
-  spd <- spectraData(s)
+  spd    <- Spectra::spectraData(s)
+  ms2.ft <- Spectra::peaksData(s)
   
-  ## Polarity
+  stopifnot("feature_id" %in% colnames(spd))
+  
+
   if (is.null(mode)) {
     mode <- ifelse(spd$polarity[1] < 0, "neg", "pos")
   }
   
-  ## ISF detection
-  XCMS4 <- AutomFindingISF_SQL(dat, spd, ms2.ft)
+  # here we detect the isf by feature groups
+  fg_list <- unique(dat$CON.new)
   
+  XCMS_ISF <- do.call(
+    rbind,
+    lapply(fg_list, FindingISF_SQL,
+           XCMS = dat,
+           spd = spd,
+           ms2.ft = ms2.ft)
+  )
+  
+  XCMS4 <- ConvertXCMS4(XCMS_ISF)
+  XCMS4 <- SearchCombinat_SQL(XCMS4, adjPeak, mode)
 
-  XCMS4 <- ConvertXCMS4(XCMS4)
-  XCMS4 <- SearchCombinat(XCMS4, adjPeak, mode)
+  fd <- featureDefinitions(x)
   
-  ## Write back to featureDefinitions
-  new_cols <- setdiff(colnames(XCMS4), colnames(featureDefinitions(x)))
+  new_cols <- setdiff(colnames(XCMS4), colnames(fd))
+  
   for (col in new_cols) {
-    featureDefinitions(x)[[col]] <- XCMS4[[col]]
+    fd[[col]] <- XCMS4[[col]][match(rownames(fd), XCMS4$feature_id)]
   }
   
-  return(x)
+  featureDefinitions(x) <- fd
+  
+  x
 }
 
 

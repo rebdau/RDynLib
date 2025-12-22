@@ -33,43 +33,65 @@
 #'
 #' @export 
 
+
 FindingISF_SQL <- function(fg, XCMS, spd, ms2.ft) {
   
-  # Select features in this feature group
+  ## Features in this group
   XCMS.sel <- XCMS[XCMS$CON.new == fg, ]
-  XCMS.sel$feature_id <- rownames(XCMS.sel)
+  XCMS.sel$isf <- NA_character_
   
-  isf <- rep(NA_character_, nrow(XCMS.sel))
+  if (nrow(XCMS.sel) == 0)
+    return(XCMS.sel)
   
-  ms2.fid <- spd$feature_id
-  # Find indices of MS2 spectra corresponding to these features
-  idx <- which(ms2.fid %in% XCMS.sel$feature_id)
+  ## Build MS2 fragments per feature
+  ms2_by_feature <- build_ms2_by_feature(spd, ms2.ft)
   
-  if (length(idx) > 0) {
+  ## Loop over features
+  for (i in seq_len(nrow(XCMS.sel))) {
     
-    # Rounded parent m/z of features in this group
-    parent <- round(XCMS.sel$mzmed, 0)
+    fid <- XCMS.sel$feature_id[i]
+    parent_mz <- round(XCMS.sel$mzmed[i], 0)
     
-    # Collect all product ions across these MS2 spectra
-    prod_ion <- c()
-    for (i in idx) {
-      pi <- ms2.ft[[i]][,1]           # m/z column
-      pi_round <- round(pi, 0)        # round to integer
-      # Remove parent m/z from product ions
-      pi_round <- pi_round[!pi_round %in% parent]
-      prod_ion <- c(prod_ion, pi_round)
+    ## Skip if no MS2
+    if (!fid %in% names(ms2_by_feature))
+      next
+    
+    frags <- ms2_by_feature[[fid]]
+    
+    ## Remove parent ion if present
+    frags <- frags[frags != parent_mz]
+    
+    ## check if any other feature matches these fragments
+    mz_all <- round(XCMS.sel$mzmed, 0)
+    
+    if (any(mz_all %in% frags)) {
+      XCMS.sel$isf[mz_all %in% frags] <- "ISF"
     }
-    
-    # Rounded feature m/z for matching
-    xcms_mz <- round(XCMS.sel$mzmed, 0)
-    
-    # Assign ISF where feature m/z is in product ions
-    isf[xcms_mz %in% prod_ion] <- "ISF"
   }
   
-  # Return the XCMS subset with isf column
-  cbind(XCMS.sel, isf)
+  XCMS.sel
 }
+
+
+build_ms2_by_feature <- function(spd, ms2.ft) {
+  
+  stopifnot("feature_id" %in% colnames(spd))
+  stopifnot(length(ms2.ft) == nrow(spd))
+  
+  ## Only MS2 spectra with a feature_id
+  idx <- which(!is.na(spd$feature_id))
+  
+  res <- split(
+    lapply(ms2.ft[idx], function(p) round(p[, 1], 0)),
+    spd$feature_id[idx]
+  )
+  
+  ## Flatten: multiple spectra per feature to one vector
+  res <- lapply(res, function(x) unique(unlist(x)))
+  
+  res
+}
+
 
 
  
