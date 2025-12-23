@@ -7,11 +7,9 @@ author: "Ahlam Mentag"
 
 ## Shiny Documents
 
-This Quarto document is made interactive using Shiny. Interactive documents allow readers to modify parameters and see the results immediately. Learn more about Shiny interactive documents at <https://quarto.org/docs/interactive/shiny/>.
+In this quarto document we add the grouping and annotation columns to the new 
+sql format of Dynlib FTMS and QTOF positive databases. 
 
-## Inputs and Outputs
-
-You can embed Shiny inputs and outputs in your document. Outputs are automatically updated whenever inputs change. This demonstrates how a standard R plot can be made interactive:
 
 ```{r}
 library(DBI)
@@ -20,6 +18,7 @@ pth <- getwd()
 setwd(pth)
 ```
 
+Create sql connections to the FTMS and QTOF positive databases
 ```{r}
 FT_path <- "C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib/data/DyLib_FTMS_pos.sqlite"
 QTOF_path <- "C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib/data/DyLib_QTOF_pos.sqlite"
@@ -27,11 +26,11 @@ FT_con <- DBI::dbConnect(RSQLite::SQLite(), FT_path)
 QTOF_con <- DBI::dbConnect(RSQLite::SQLite(), QTOF_path)
 ```
 
-
+List tables of FTMS positive data
 ```{r}
 dbListTables(FT_con)
 ```
-
+List columns names of the ms_compound table
 ```{r}
 dbListFields(FT_con, "ms_compound")
 ```
@@ -70,6 +69,9 @@ anno_cols_all
 ```
 
 ```{r}
+# Combine all columns you might add
+all_cols <- c(grp_cols_all, anno_cols_all, extra_cols)
+
 existing_cols <- dbListFields(FT_con, "ms_compound")
 
 add_if_missing <- function(colname) {
@@ -82,8 +84,8 @@ add_if_missing <- function(colname) {
   }
 }
 
-invisible(lapply(grp_cols_all, add_if_missing))
-invisible(lapply(anno_cols_all, add_if_missing))
+# Add all missing columns
+invisible(lapply(all_cols, add_if_missing))
 
 ```
 
@@ -127,7 +129,8 @@ ON ms_compound (expid, nodename, retention_time, mass_measured)
 ```
 
 
-
+Extracting the experiment number from each experiment folder in the old dynlib
+database
 ```{r}
 extract_expid <- function(folder_name) {
   as.integer(sub(".*Exp([0-9]+).*", "\\1", folder_name))
@@ -136,30 +139,46 @@ extract_expid <- function(folder_name) {
 ```
 
 ```{r}
-build_ms_compound_df <- function(xcms, expid, grp_cols_all, anno_cols_all) {
+build_ms_compound_df <- function(xcms, expid, grp_cols_all = NULL, anno_cols_all = NULL, extra_cols = NULL) {
 
   df <- data.frame(
-    nodename = xcms$name,
-    mass_measured = xcms$mzmed,
+    nodename       = xcms$name,
+    mass_measured  = xcms$mzmed,
     retention_time = xcms$rtmed,
-    expid = expid,
+    expid          = expid,
     stringsAsFactors = FALSE
   )
 
-  for (cl in grp_cols_all) {
-    df[[cl]] <- if (cl %in% names(xcms)) xcms[[cl]] else NA
+  # add grouping columns dynamically if present
+  if (!is.null(grp_cols_all)) {
+    for (cl in grp_cols_all) {
+      df[[cl]] <- if (cl %in% names(xcms)) xcms[[cl]] else NA
+    }
   }
 
-  for (cl in anno_cols_all) {
-    df[[cl]] <- if (cl %in% names(xcms)) xcms[[cl]] else NA
+  # add annotation columns dynamically if present
+  if (!is.null(anno_cols_all)) {
+    for (cl in anno_cols_all) {
+      df[[cl]] <- if (cl %in% names(xcms)) xcms[[cl]] else NA
+    }
+  }
+
+  # add extra metadata columns dynamically if present
+  if (!is.null(extra_cols)) {
+    for (cl in extra_cols) {
+      df[[cl]] <- if (cl %in% names(xcms)) xcms[[cl]] else NA
+    }
   }
 
   df
 }
 
+
 ```
 
 
+Extracting the grouping and annotation columns from the "xcms2.txt" file of each
+experiment:
 
 ```{r}
 folders <- list.dirs(base_dir, recursive = FALSE)
@@ -180,9 +199,14 @@ for (fld in folders) {
     stringsAsFactors = FALSE
   )
 
-  new_df <- build_ms_compound_df(
-    xcms, expid, grp_cols_all, anno_cols_all
-  )
+# detect extra columns you want to include
+extra_cols <- c("isf", "MeAb", "CorrPkGrp", "massMS1", "Comb",
+                "con", "CON.new", "subgrp", "CON.new.1")
+
+new_df <- build_ms_compound_df(
+  xcms, expid, grp_cols_all, anno_cols_all, extra_cols
+)
+
 
   dbWithTransaction(FT_con, {
 
@@ -214,7 +238,6 @@ for (fld in folders) {
       new_df <- new_df[!key_new %in% key_existing, ]
     }
 
-    ##  BULK INSERT 
     if (nrow(new_df) > 0) {
       dbAppendTable(FT_con, "ms_compound", new_df)
     }
@@ -249,28 +272,88 @@ dbGetQuery(
 
 ```
 
-
+In case of adding new features that were not already in the `ms_compound` table
+we create new compound ids for them based on the maximum `compoun_id` in the 
+database.
 ```{r}
 dbExecute(
   FT_con,
   "
-  WITH ordered AS (
-    SELECT
-      rowid,
-      ROW_NUMBER() OVER (ORDER BY rowid) AS new_id
-    FROM ms_compound
-  )
-  UPDATE ms_compound
-  SET compound_id = (
-    SELECT new_id
-    FROM ordered
-    WHERE ordered.rowid = ms_compound.rowid
-  )
+  CREATE TEMP TABLE tmp_compound_fix AS
+  SELECT
+    rowid AS rid,
+    (
+      SELECT COALESCE(MAX(CAST(compound_id AS INTEGER)), 0)
+      FROM ms_compound
+      WHERE compound_id IS NOT NULL
+    )
+    + ROW_NUMBER() OVER (ORDER BY rowid) AS new_id
+  FROM ms_compound
+  WHERE compound_id IS NULL
   "
 )
 
+dbExecute(
+  FT_con,
+  "CREATE INDEX idx_tmp_compound_fix_rid ON tmp_compound_fix(rid)"
+)
+
+dbExecute(FT_con, "BEGIN TRANSACTION")
 
 ```
+we incremented the compound_ids first using a temporary table because the 
+`compound_id` column is defined as "TEXT", then we copy back the new ids to the 
+`ms_compound` table.
+```{r}
+dbExecute(
+  FT_con,
+  "
+  UPDATE ms_compound
+  SET compound_id = (
+    SELECT new_id
+    FROM tmp_compound_fix
+    WHERE tmp_compound_fix.rid = ms_compound.rowid
+  )
+  WHERE compound_id IS NULL
+  "
+)
+
+dbExecute(FT_con, "COMMIT")
+
+
+```
+
+
+```{r}
+dbExecute(FT_con, "DROP TABLE tmp_compound_fix")
+
+```
+
+
+```{r}
+dbGetQuery(
+  FT_con,
+  "SELECT COUNT(*) AS n FROM ms_compound WHERE compound_id IS NULL"
+)
+
+```
+
+```{r}
+dbGetQuery(
+  FT_con,
+  "
+  SELECT compound_id
+  FROM ms_compound
+  WHERE expid = 78
+    AND anno IS NOT NULL
+  LIMIT 10
+  "
+)
+
+```
+
+
+
 
 ```{r}
 dbGetQuery(
@@ -283,6 +366,18 @@ dbGetQuery(
   "
 )
 
+```
+```{r}
+dbGetQuery(
+  FT_con,
+  "
+  SELECT *
+  FROM ms_compound
+  WHERE expid = 78
+    AND anno IS NOT NULL
+  LIMIT 10
+  "
+)
 ```
 
 
