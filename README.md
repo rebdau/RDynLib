@@ -39,13 +39,13 @@ format and we convert it to sql subdatabases in the following files:
   addition we created a script for adding qtofneg flax to the dynlib qtofneg sql
   database.
 
-  - [dyL_annot_FT_QT_pos.qmd](https://github.com/rebdau/RDynLib/blob/dev_Ahlam/dyL_annot_FT_QT_pos.qmd) :
+ - [dyL_annot_FT_QT_pos.qmd](https://github.com/rebdau/RDynLib/blob/dev_Ahlam/dyL_annot_FT_QT_pos.qmd) :
   This Quarto document represents the workflow of adding the annotation and grouping columns from
   the xcms2.txt files in the old dynlib structure to the new SQL version, specifically to the
   ms_compound table. In this file, we processed the dynlib FTMS positive data; the QTOF positive
   data does not contain any annotation or grouping file.
 
- - [dyL_flax_annot_FTMS_neg.qmd](https://github.com/rebdau/RDynLib/blob/dev_Ahlam/dyL_flax_annot_FTMS_neg.qmd) :
+- [dyL_flax_annot_FTMS_neg.qmd](https://github.com/rebdau/RDynLib/blob/dev_Ahlam/dyL_flax_annot_FTMS_neg.qmd) :
   This Quarto document represents the workflow of adding the annotation and grouping columns from
   the xcms2.txt files in the old dynlib structure to the new SQL version, specifically to the
   ms_compound table. In this file, we processed the dynlib FTMS and QTOF negative data; Plus the annotation
