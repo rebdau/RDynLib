@@ -22,7 +22,7 @@ library(dplyr)
 library(RSQLite)
 library(CompoundDb)
 register(SerialParam())
-setwd("C:/Users/amentag/Desktop/these/These/clones/RDynlib/RDynLib/Similarity/FTMS")
+setwd("C:/Users/ament/Desktop/Github/RDynLib/Similarity/FTMS")
 pth <- getwd()
 pth
 ```
@@ -339,5 +339,99 @@ sp <- Spectra(cdb)
 
 ```{r}
 spectraData(sp, columns = c("msLevel", "compound_id", "nodename", "rtime", "retention_time", "spectrum_type"))
+```
+
+Load the similarity table between flax and Dynlib ftms negative data
+```{r}
+load("data/match_DyFtms_neg.RData")
+```
+
+```{r}
+print(result)
+```
+
+
+```{r}
+adding_Names_SQL <- function(con_merged, sim_table) {
+
+  library(DBI)
+  library(dplyr)
+
+  ms_compound <- dbReadTable(con_merged, "ms_compound")
+  msms_spectrum <- dbReadTable(con_merged, "msms_spectrum")
+
+  sim_sub <- sim_table %>%
+    select(
+      feature_id,
+      dataStorage,
+      matched_peaks_count,
+      score,
+      target_name
+    ) %>%
+    distinct()
+
+  sim_msms <- sim_sub %>%
+    inner_join(
+      msms_spectrum %>% select(compound_id, dataOrigin),
+      by = c("dataStorage" = "dataOrigin")
+    )
+
+  sim_compound <- sim_msms %>%
+    inner_join(
+      ms_compound %>% select(compound_id, nodename),
+      by = "compound_id"
+    ) %>%
+    filter(nodename == feature_id) %>%
+    mutate(
+      name = paste0(
+        "!",
+        matched_peaks_count,
+        "!",
+        score,
+        "!",
+        target_name
+      )
+    ) %>%
+    select(compound_id, name) %>%
+    distinct()
+
+  tryCatch({
+
+    dbExecute(con_merged, "BEGIN TRANSACTION")
+
+    dbWriteTable(
+      con_merged,
+      "tmp_update_name",
+      sim_compound,
+      temporary = TRUE,
+      overwrite = TRUE
+    )
+
+    dbExecute(con_merged, "
+      UPDATE ms_compound
+      SET name = tmp_update_name.name
+      FROM tmp_update_name
+      WHERE ms_compound.compound_id = tmp_update_name.compound_id
+    ")
+
+    dbExecute(con_merged, "COMMIT")
+
+  }, error = function(e) {
+    dbExecute(con_merged, "ROLLBACK")
+    stop(e)
+  })
+
+  invisible(nrow(sim_compound))
+}
+
+```
+
+
+```{r}
+adding_Names_SQL(con_merged, result)
+```
+
+```{r}
+dbGetQuery(con_merged, "Select * from ms_compound where expid = 266 and name IS NOT NULL")
 ```
 
