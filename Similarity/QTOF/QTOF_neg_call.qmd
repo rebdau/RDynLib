@@ -12,7 +12,7 @@ negative database.
 ```{r}
 library(Spectra)
 library(CompoundDb)
-setwd("C:/Users/amentag/Desktop/these/These/clones/new_clones/RDynLib/Similarity/QTOF")
+setwd("C:/Users/ament/Desktop/Github/RDynLib/Similarity/QTOF")
 pth <- getwd()
 pth
 ```
@@ -26,10 +26,15 @@ source("sim_functions_qtofneg.R")
 
 Here we install the new CompoundDb version
 ```{r}
-#BiocManager::install("RforMassSpectrometry/CompoundDb", ref = "jomain", force = TRUE)
+BiocManager::install("RforMassSpectrometry/CompoundDb", ref = "jomain", force = TRUE)
 ```
 
-
+```{r}
+ExpCompDb <- function(x) {
+    cdb <- CompDb(x)
+    CompoundDb::addJoinDefinition(cdb, "ms_compound", "experiment", "expid", "expid")
+}
+```
 
 Next we convert the "DyLib_QTOF_neg2.sqlite" database to a spectra object
 ```{r}
@@ -49,17 +54,34 @@ dbWriteTable(db, "experiment", experiment_df)
 dbGetQuery(db, "PRAGMA table_info(experiment)")
 dbDisconnect(db)
 #we convert the sql database to a Compdb object
-cdb <- CompDb(dbf)
+cdb <- ExpCompDb(dbf)
 #we convert the Compdb object to a spectra object
 dy_sps <- Spectra(cdb)
 ```
 
 Here we load the QTOF of flax seed database (it's already a spectra object)  
 ```{r}
-load("data/ms2_qtof_Comb.RData")
-qtof_neg <- qtof_filtered
+load("data/qtof_flax_final.RData")
+qtof_neg <- qtof_flax_final
 spectraData(qtof_neg)
 ```
+
+```{r}
+dataStorageBasePath(qtof_flax_final) <- "D:/work/these/These/clones/new_clones/RDynLib_qtof/data/mzml"
+
+```
+
+```{r}
+save(qtof_flax_final, file = "data/qtof_flax_final.RData")
+```
+
+
+```{r}
+load("data/qtof_flax_final.RData")
+qtof_neg <- qtof_flax_final
+spectraData(qtof_neg)
+```
+
 
 
 Next we calculate the similarity score between the dynlib and flax seed QTOF
