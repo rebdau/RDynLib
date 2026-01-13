@@ -5,15 +5,24 @@ format:
     toc: true
     self-contained: true
 author: "Ahlam Mentag, Johannes Rainer"
+editor: 
+  markdown: 
+    wrap: 72
 ---
 
 ## Shiny Documents
 
-This quarto document represents the full workflow to add ftmsneg flax to Dynlib
-sql database, and then to a Combpdb and spectra Objects.
-The retention times in Dynlib are in minutes, but in flax data are in seconds.
-In the following workflow while adding flax to Dynlib we will unify the units
-and convert the retention times of flax data to minutes.
+This quarto document represents the full workflow to add ftmsneg flax to
+Dynlib sql database, and then to a CompDb and spectra Objects. The
+retention times in Dynlib are in minutes, but in flax data are in
+seconds. In the following workflow while adding flax to Dynlib we will
+unify the units and convert the retention times of flax data to minutes.
+
+Note: In this file we will need the similarity output file between the
+existing database and the new experiment that we would like to to add,
+that's why we have to run first this quarto document: \
+[FTMS_neg_call.qmd](https://github.com/rebdau/RDynLib/blob/dev_Ahlam/Similarity/FTMS/FTMS_neg_call.qmd)
+and load the output here.
 
 ```{r}
 library(Spectra)
@@ -28,31 +37,29 @@ pth
 ```
 
 Loading the sql database of flax qtof negative
+
 ```{r}
 con_flax <- dbConnect(RSQLite::SQLite(), "data/ftms_flax_neg.sqlite")
 ```
 
 Loading the sql database of Dynlib qtof negative
+
 ```{r}
 con_dyL <- dbConnect(RSQLite::SQLite(), "data/DyLib_FTMS_neg_or.sqlite")
 ```
-
 
 ```{r}
 dbListTables(con_flax)
 ```
 
-
 ```{r}
 dbListTables(con_dyL)
 ```
-
 
 ```{r}
 # Create new database
 con_merged <- dbConnect(SQLite(), "data/DYL_FLAX_FTMSneg.sqlite")
 ```
-
 
 ```{r}
 merge_databases <- function(main_db, add_db, output_db) {
@@ -243,7 +250,6 @@ merge_databases(
 
 ```
 
-
 ```{r}
 con_merged <- dbConnect(SQLite(), "data/DYL_FLAX_FTMSneg.sqlite")
 dbListTables(con_merged)
@@ -254,8 +260,8 @@ dbGetQuery(con_merged, "PRAGMA table_info(msms_spectrum);")
 dbGetQuery(con_merged, "PRAGMA table_info(ms_compound);")
 ```
 
-
 #Ensuring the experiment table has been well merged
+
 ```{r}
 dbReadTable(con_merged, "experiment")
 ```
@@ -263,7 +269,6 @@ dbReadTable(con_merged, "experiment")
 ```{r}
 dbGetQuery(con_merged, "Select * from experiment where user = 'Ahlam'")
 ```
-
 
 The new experiment has 266 as expid
 
@@ -278,13 +283,14 @@ dbGetQuery(con_dyL, "
 
 ```
 
-The highest compound_id is 100911  in the Dynlib database
+The highest compound_id is 100911 in the Dynlib database
 
 ```{r}
 dbGetQuery(con_merged, "Select * from ms_compound where expid = 266 LIMIT 10")
 ```
 
-the query results show that the compound_id of the added experiment "266" start by 100912 which is correct
+the query results show that the compound_id of the added experiment
+"266" start by 100912 which is correct
 
 #Ensuring the msms_spectrum table has been well merged
 
@@ -295,21 +301,21 @@ dbGetQuery(con_dyL, "
   LIMIT 10
 ")
 ```
-The highest spectrum_id is 201034 in the Dynlib database
 
+The highest spectrum_id is 201034 in the Dynlib database
 
 ```{r}
 dbGetQuery(con_merged, "Select * from msms_spectrum where compound_id = 100912 Limit 10")
 ```
 
-the query results show that the spectrum_id of the added experiment "266" start by 201035 which is correct
+the query results show that the spectrum_id of the added experiment
+"266" start by 201035 which is correct
 
 #Ensuring the msms_spectrum_peak table has been well merged
 
 ```{r}
 dbGetQuery(con_merged, "Select * from msms_spectrum_peak where spectrum_id = 201035")
 ```
-
 
 #Ensuring the feature_matrix table has been well merged
 
@@ -322,11 +328,11 @@ dbGetQuery(con_merged, "Select * from feature_matrix where expid = 266 LIMIT 10"
 ```
 
 #Converting the merged sql connection to a compdb object
+
 ```{r}
 cdb <- CompDb(con_merged)
 cdb
 ```
-
 
 ```{r}
 compounds(cdb) |> head()
@@ -336,12 +342,12 @@ compounds(cdb) |> head()
 sp <- Spectra(cdb)
 ```
 
-
 ```{r}
 spectraData(sp, columns = c("msLevel", "compound_id", "nodename", "rtime", "retention_time", "spectrum_type"))
 ```
 
 Load the similarity table between flax and Dynlib ftms negative data
+
 ```{r}
 load("data/match_DyFtms_neg.RData")
 ```
@@ -349,7 +355,6 @@ load("data/match_DyFtms_neg.RData")
 ```{r}
 print(result)
 ```
-
 
 ```{r}
 adding_Names_SQL <- function(con_merged, sim_table) {
@@ -445,7 +450,6 @@ adding_Names_SQL <- function(con_merged, sim_table) {
 
 ```
 
-
 ```{r}
 
 #dbDisconnect(con_merged)
@@ -456,8 +460,6 @@ con_merged <- dbConnect(SQLite(), "data/DYL_FLAX_FTMSneg.sqlite")
 adding_Names_SQL(con_merged, result)
 ```
 
-
 ```{r}
 dbGetQuery(con_merged, "Select * from ms_compound where expid = 266 and name IS NOT NULL")
 ```
-
