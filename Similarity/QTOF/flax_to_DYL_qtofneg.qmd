@@ -15,6 +15,12 @@ The retention times in Dynlib are in minutes, but in flax data are in seconds.
 In the following workflow while adding flax to Dynlib we will unify the units
 and convert the retention times of flax data to minutes.
 
+Note: In this file we will need the similarity output file between the
+existing database and the new experiment that we would like to to add,
+that's why we have to run first this quarto document: \
+[QTOF_neg_call.qmd](https://github.com/rebdau/RDynLib/blob/dev_Ahlam/Similarity/QTOF/QTOF_neg_call.qmd)
+and load the output here.
+
 ```{r}
 library(Spectra)
 library(CompoundDb)
@@ -40,9 +46,11 @@ con_dyL <- dbConnect(RSQLite::SQLite(), "data/DyLib_QTOF_neg.sqlite")
 ```{r}
 dbListTables(con_flax)
 ```
+
 ```{r}
 dbListTables(con_dyL)
 ```
+
 ```{r}
 # Create new database
 con_merged <- dbConnect(SQLite(), "data/DYL_FLAX_QTOFneg.sqlite")
@@ -331,3 +339,134 @@ sp <- Spectra(cdb)
 spectraData(sp, columns = c("msLevel", "compound_id", "nodename", "rtime", "retention_time", "spectrum_type"))
 ```
 
+
+Load the similarity table between flax and Dynlib ftms negative data
+
+```{r}
+load("data/match_results_qtofneg.RData")
+```
+
+```{r}
+sim_table <- as_tibble(result)
+print(sim_table)
+```
+
+```{r}
+adding_Names_SQL <- function(con_merged, sim_table) {
+
+  library(DBI)
+  library(dplyr)
+  library(tools) 
+
+  # Read tables
+  ms_compound <- dbReadTable(con_merged, "ms_compound")
+  msms_spectrum <- dbReadTable(con_merged, "msms_spectrum")
+
+  # Keep only relevant columns from sim_table
+  sim_sub <- sim_table %>%
+    select(
+      feature_id,
+      dataOrigin ,
+      matched_peaks_count,
+      score,
+      target_name
+    ) %>%
+    distinct() %>%
+    # Extract just the filename
+    mutate(file_name = basename(dataOrigin ))
+
+  # extract just the filename in msms_spectrum
+  msms_spectrum <- msms_spectrum %>%
+    mutate(file_name = basename(dataOrigin))
+
+  # Join sim_table with msms_spectrum using only the file name
+  sim_msms <- sim_sub %>%
+    inner_join(
+      msms_spectrum %>% select(compound_id, file_name),
+      by = "file_name"
+    )
+
+  # Join with ms_compound via nodename = feature_id
+  sim_compound <- sim_msms %>%
+    inner_join(
+      ms_compound %>% select(compound_id, nodename),
+      by = "compound_id"
+    ) %>%
+    filter(nodename == feature_id) %>%
+    mutate(
+      # Build the name in the desired format
+      name = paste0(
+        "!",
+        matched_peaks_count,
+        "!",
+        score,
+        "!",
+        target_name
+      )
+    ) %>%
+    select(compound_id, name) %>%
+    distinct()
+
+  # Update ms_compound 
+  tryCatch({
+
+    dbExecute(con_merged, "BEGIN TRANSACTION")
+
+    dbWriteTable(
+      con_merged,
+      "tmp_update_name",
+      sim_compound,
+      temporary = TRUE,
+      overwrite = TRUE
+    )
+
+    dbExecute(con_merged, "
+      UPDATE ms_compound
+      SET name = (
+        SELECT tmp_update_name.name
+        FROM tmp_update_name
+        WHERE tmp_update_name.compound_id = ms_compound.compound_id
+      )
+      WHERE compound_id IN (
+        SELECT compound_id FROM tmp_update_name
+      )
+    ")
+
+    dbExecute(con_merged, "COMMIT")
+
+  }, error = function(e) {
+    dbExecute(con_merged, "ROLLBACK")
+    stop(e)
+  })
+
+  invisible(nrow(sim_compound))
+}
+
+```
+
+```{r}
+
+#dbDisconnect(con_merged)
+```
+
+```{r}
+con_merged <- dbConnect(SQLite(), "data/DYL_FLAX_QTOFneg.sqlite")
+adding_Names_SQL(con_merged, sim_table)
+```
+```{r}
+check_feature_match <- sim_features %>%
+  inner_join(
+    ms_compound,
+    by = c("feature_id" = "nodename")
+  )
+
+nrow(check_feature_match)
+```
+
+
+
+
+
+```{r}
+dbGetQuery(con_merged, "Select * from ms_compound where expid = 52 and name IS NOT NULL")
+```
