@@ -18,7 +18,7 @@ EnterName_SQL <- function(data_path, CoMPID, SubDB){
   # compound.csv might be a shrunk version of the initial database, just containing
   # the selected experiment, then, row number is not equal to the COMPID:
   dbkey<-which(as.integer(CmpCSV["compound_id"])%in%as.integer(dbkey))
-  ConcatName<-read.table("compound_name.txt",header=T,sep="\t",stringsAsFactors=F)
+  #ConcatName<-read.table("compound_name.txt",header=T,sep="\t",stringsAsFactors=F)
   print("Currently, this info for your dbkey is present:")
   print(paste("COMPID: ",CmpCSV[dbkey, "compound_id"],sep=""))
   print(paste("COMPNAME: ",CmpCSV[dbkey, "name"],sep=""))
@@ -47,8 +47,8 @@ EnterName_SQL <- function(data_path, CoMPID, SubDB){
     return()
   }
   rm_sel1<-paste(rm_sel1," ",sep="")
-  print("Give structural moieties separated by ' + ' as a concatenated name.")
-  rm_selQ<-readline("Concatenated name:")
+  #print("Give structural moieties separated by ' + ' as a concatenated name.")
+  #rm_selQ<-readline("Concatenated name:")
   print("For the following name, replace comma by underscore and primes by the abbreviation pr")
   rm_sel2=""
   while (rm_sel2=="") rm_sel2<-tolower(c(readline("Name:")))
@@ -93,10 +93,12 @@ EnterName_SQL <- function(data_path, CoMPID, SubDB){
   SATIS<-c(readline("Enter the data?"))
   
   #Ahlam : what is termen? the switch of directories? 
+  #termen.txt was a list of random messages, in Flemish, telling the user that *again* he/she made a mistake and will have to try again.
+  #it was meant as a joke, but in the mean time a necessary escape route if the entered information was not correct.
+  #I replaced it here by a sinlge English message.
   if (SATIS!="yes"){
-    setwd(paste(base.dir,"/Rlibrary",sep=""))
-    termen<-read.table("termen.txt",header=F,sep="\t",stringsAsFactors=F)
-    return(sample(termen[,1],size=1))
+    message <- "Oops! Looks like you made a mistake. Don’t worry, you can try again by calling EnterName_SQL(data_path, CoMPID, SubDB) again."
+    return(message)
   }else{
     setwd(TMP[[3]])	 
     CmpCSV[dbkey,3]<-rmsl
@@ -117,9 +119,11 @@ EnterName_SQL <- function(data_path, CoMPID, SubDB){
       CmpCSV[dbkey, "name"]<-rmsl
       CmpCSV[dbkey, "smiles"]<-smiles
     }
-    setwd(TMP[[4]])
-    ConcatName[dbkey,2]<-rm_selQ
-    write.table(ConcatName,"compound_name.txt",sep="\t",row.names=F)
+    #"database_FTMS_neg\CSV_add\compound_name.txt" was meant to contain conservative structures: an enumeration of substructures without specifying the links between them.
+    #We can leave it out for now
+    #setwd(TMP[[4]])
+    #ConcatName[dbkey,2]<-rm_selQ
+    #write.table(ConcatName,"compound_name.txt",sep="\t",row.names=F)
   }
 }
 
