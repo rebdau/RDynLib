@@ -464,9 +464,6 @@ nrow(check_feature_match)
 ```
 
 
-
-
-
 ```{r}
 dbGetQuery(con_merged, "Select * from ms_compound where expid = 52 and name IS NOT NULL")
 ```
