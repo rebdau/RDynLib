@@ -1,12 +1,36 @@
+#' @title convert a sql database to an mgf file
+#'
+#' @description sql_to_mgf() function first convert a sqlite database to a CompDb
+#'  object and then to a spectra object after that we extract the spectra 
+#'  variables needed to use with MsBackendMgf package and finally we get that
+#'  mgf file of a given experiment with a spectrum_type in a sqlite database.
+#'  
+#' @param sqlite_path 'character()' the file path to a sql database.
+#' 
+#' @param expid 'numeric()' experiment number of the data to convert to  
+#'        an mgf file.
+#' 
+#' @param spectrum_type 'character()' For flax ftms data it could be 
+#'       "not_assembled" or "assembled".
+#'       For Qtof flax data it could be "intersect_single_energy" 
+#'       or "merged_MSMS_all_energies".
+#'       
+#' @param output_file 'character()' the output directory of the final mgf file.
+#' 
+#' @return an mgf file with the data from the sqlite database.
+#' 
+#' @import Spectra
+#' @import CompoundDb
+#' @import MsBackendMgf
+#' 
+#' @author Ahlam Mentag
+#' 
+#' @export                
 sql_to_mgf <- function(sqlite_path,
                        expid,
                        spectrum_type = NULL,
                        output_file) {
-  
-  # Packages
-  library(Spectra)
-  library(CompoundDb)
-  library(MsBackendMgf)
+
   
   # GNPS helper functions
   source("https://raw.githubusercontent.com/jorainer/xcms-gnps-tools/master/customFunctions.R")
@@ -63,14 +87,6 @@ sql_to_mgf <- function(sqlite_path,
   
   invisible(TRUE)
 }
-
-
-sql_to_mgf(
-  sqlite_path   = "C:/Users/ament/Desktop/Github/RDynLib/data/DYL_FLAX_FTMSneg.sqlite",
-  expid         = 266,
-  spectrum_type = "not_assembled",
-  output_file   = "C:/Users/ament/Desktop/Github/RDynLib/data/DYL_FLAX_FTMSneg.mgf"
-)
 
 
 
