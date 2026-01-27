@@ -4,7 +4,7 @@ format:
   html:
     toc: true
     self-contained: true
-author: "Ahlam Mentag, Johannes Rainer"
+author: "Ahlam Mentag, Rebecca Dauwe, Johannes Rainer"
 ---
 
 # Introduction
@@ -29,7 +29,7 @@ library(RSQLite)
 ```
 
 
-We first inspect the data for one of the databases, the *FTMS positive polarity*
+We first inspect the data for one of the databases, the *FTMS negative polarity*
 data.
 
 ```{r}
@@ -545,7 +545,7 @@ tmp <- dbExecute(
 tmp <- dbExecute(
     con, "create index msms_id_idx on msms_spectrum_peak (spectrum_id)")
 
-dbDisconnect(con)
+
 ```
 	
 
@@ -627,6 +627,8 @@ dbWriteTable(con, "feature_matrix", nodes_long, append = TRUE, row.names = FALSE
 
 ```{r}
 dbGetQuery(con, "Select * from feature_matrix where expid = 191 LIMIT 10")
+
+dbDisconnect(con)
 ```
 
 

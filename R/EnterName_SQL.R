@@ -62,12 +62,13 @@ EnterName_SQL <- function(data_path, CoMPID){
   data_con <- dbConnect(SQLite(), data_path)
   on.exit(dbDisconnect(data_con), add = TRUE)
   
+
   # read compound
   cmp_data <- dbGetQuery(
     data_con,
     paste0("SELECT * FROM ms_compound WHERE compound_id = ", as.integer(CoMPID))
   )
-  
+
   if (nrow(cmp_data) == 0) {
     stop("No compound found for compound_id = ", CoMPID)
   }
@@ -159,6 +160,40 @@ EnterName_SQL <- function(data_path, CoMPID){
     )
   }
   
+<<<<<<< HEAD
+  #Ahlam : what is termen? the switch of directories? 
+  #termen.txt was a list of random messages, in Flemish, telling the user that *again* he/she made a mistake and will have to try again.
+  #it was meant as a joke, but in the mean time a necessary escape route if the entered information was not correct.
+  #I replaced it here by a sinlge English message.
+  if (SATIS!="yes"){
+    message <- "Oops! Looks like you made a mistake. Don’t worry, you can try again by calling EnterName_SQL(data_path, CoMPID, SubDB) again."
+    return(message)
+  }else{
+    setwd(TMP[[3]])	 
+    CmpCSV[dbkey,3]<-rmsl
+    if (formul!="") CmpCSV[dbkey, "formula"]<-formul
+    if (ppm!="") CmpCSV[dbkey, "ppm_deviation"]<-ppm
+    if (smiles!="") CmpCSV[dbkey, "smiles"]<-smiles # nog functie om te checken of SMILES string overeenkomt met chemische formula
+    write.table(CmpCSV,"compound.csv",sep="\t",row.names=F)
+    if(SubDB=="FTneg"){
+      CmpCSV[dbkey, "name"]<-rmsl
+      CmpCSV[dbkey, "smiles"]<-smiles
+    } else if (SubDB=="FTpos") {
+      CmpCSV[dbkey, "name"]<-rmsl
+      CmpCSV[dbkey, "smiles"]<-smiles
+    } else if (SubDB=="QTOFneg") {
+      CmpCSV[dbkey, "name"]<-rmsl
+      CmpCSV[dbkey, "smiles"]<-smiles
+    } else if (SubDB=="QTOFpos") {
+      CmpCSV[dbkey, "name"]<-rmsl
+      CmpCSV[dbkey, "smiles"]<-smiles
+    }
+    #"database_FTMS_neg\CSV_add\compound_name.txt" was meant to contain conservative structures: an enumeration of substructures without specifying the links between them.
+    #We can leave it out for now
+    #setwd(TMP[[4]])
+    #ConcatName[dbkey,2]<-rm_selQ
+    #write.table(ConcatName,"compound_name.txt",sep="\t",row.names=F)
+=======
   # optional metadata
   formul <- gsub(" ", "", toupper(readline("Formula (enter if none): ")), fixed = TRUE)
   smiles <- readline("SMILES (enter if none): ")
@@ -179,6 +214,7 @@ EnterName_SQL <- function(data_path, CoMPID){
       "Call EnterName_SQL(data_path, CoMPID) again."
     )
     return(invisible(NULL))
+>>>>>>> dev_Ahlam
   }
   
   # build SQL update
