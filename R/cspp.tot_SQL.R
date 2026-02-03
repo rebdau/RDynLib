@@ -12,39 +12,40 @@
 cspp.tot_SQL <- function(sql_path, expid, mzerr = 0.015,
                          cspp = "cspp.txt", peakwidth = NULL) {
   
+
   data_con <- dbConnect(RSQLite::SQLite(), sql_path)
   on.exit(dbDisconnect(data_con), add = TRUE)
   
   if (is.null(peakwidth)) peakwidth <- 0.2
-  
-  ## get compound IDs for the experiment
+
   inp.x <- dbGetQuery(
     data_con,
     sprintf(
       "SELECT compound_id,
-            mass_measured,
-            retention_time
-     FROM ms_compound
-     WHERE expid = %d",
+              mass_measured,
+              retention_time
+       FROM ms_compound
+       WHERE expid = %d",
       expid
     )
   )
   
-  
-  ## get compound_add table
+  if (nrow(inp.x) == 0) {
+    stop("No compounds found for expid = ", expid)
+  }
+
   comp_add <- dbGetQuery(
     data_con,
-    "SELECT compound_id FROM compound_add"
+    "SELECT * FROM compound_add"
   )
   
-  ## read CSPP conversion table
+
   conv.table <- read.table(
     cspp,
     header = TRUE,
     sep = "\t",
     stringsAsFactors = FALSE
   )
-  
   
   conver <- data.frame(
     conv.type  = as.character(conv.table[, 1]),
@@ -54,28 +55,57 @@ cspp.tot_SQL <- function(sql_path, expid, mzerr = 0.015,
     stringsAsFactors = FALSE
   )
   
-  
+
   for (k in seq_len(nrow(conver))) {
     
-    mzdiff <- conver$conv.mz[k]
-    direc  <- conver$conv.direc[k]
-    conv.col <- conver$conv.colmn[k]
-    
-    cspp.df <- conv.CSPP(
+    cspp.df <- conv.CSPP_SQL(
       inp.x,
-      mzdiff,
-      direc,
-      peakwidth,
-      mzerr,
-      expid
+      mzdiff    = conver$conv.mz[k],
+      direc     = conver$conv.direc[k],
+      peakwidth = peakwidth,
+      mzerr     = mzerr,
+      expid     = expid
     )
     
-    comp_add <- rank.cspp(cspp.df, conv.col, comp_add)
+    comp_add <- rank.cspp(
+      cspp.df,
+      conver$conv.colmn[k],
+      comp_add
+    )
+  }
+
+  comp_add$compound_id <- inp.x$compound_id[
+    seq_len(nrow(comp_add))
+  ]
+  
+
+  cols_to_update <- setdiff(colnames(comp_add), "compound_id")
+  
+  dbBegin(data_con)
+  
+  for (i in seq_len(nrow(comp_add))) {
+    
+    cid <- comp_add$compound_id[i]
+    
+    for (col in cols_to_update) {
+      
+      dbExecute(
+        data_con,
+        sprintf(
+          "UPDATE compound_add
+           SET %s = ?
+           WHERE compound_id = ?",
+          col
+        ),
+        params = list(comp_add[i, col], cid)
+      )
+    }
   }
   
-  comp_add$compound_id <- inp.x$compound_id[seq_len(nrow(comp_add))]
+  dbCommit(data_con)
   
-  return(comp_add)
+
+  invisible(comp_add)
 }
 
 
