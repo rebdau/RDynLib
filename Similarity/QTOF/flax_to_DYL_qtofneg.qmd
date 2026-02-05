@@ -467,3 +467,76 @@ nrow(check_feature_match)
 ```{r}
 dbGetQuery(con_merged, "Select * from ms_compound where expid = 52 and name IS NOT NULL")
 ```
+
+
+#add compound_add file to a sql table
+
+```{r}
+compound_add_path <- "D:/equip_msdata/database_QTOF_neg/CSV_add/compound_add.txt"
+
+compound_add_df <- read.table(
+  compound_add_path,
+  header = TRUE,
+  sep = "\t",
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+
+names(compound_add_df)[names(compound_add_df) == "COMPID"] <- "compound_id"
+
+names(compound_add_df) <- make.unique(names(compound_add_df), sep = "_")
+
+```
+
+resolving duplicate names conflicts
+
+```{r}
+names(compound_add_df) <- sub("^CSPP_HuN$", "CSPP_HuN_mixed", names(compound_add_df))
+names(compound_add_df) <- sub("^CSPP_HaN$", "CSPP_HaN_mixed", names(compound_add_df))
+names(compound_add_df) <- sub("^CSPP_GuN$", "CSPP_GuN_mixed", names(compound_add_df))
+names(compound_add_df) <- sub("^CSPP_GaN$", "CSPP_GaN_mixed", names(compound_add_df))
+names(compound_add_df) <- sub("^CSPP_SuN$", "CSPP_SuN_mixed", names(compound_add_df))
+names(compound_add_df) <- sub("^CSPP_SaN$", "CSPP_SaN_mixed", names(compound_add_df))
+
+
+```
+
+
+```{r}
+cols_sql <- paste(
+  sprintf('"%s" REAL', setdiff(names(compound_add_df), "compound_id")),
+  collapse = ",\n  "
+)
+
+dbExecute(con_merged, "DROP TABLE IF EXISTS compound_add;")
+
+create_sql <- sprintf("
+CREATE TABLE compound_add (
+  compound_id TEXT,
+  %s
+);
+", cols_sql)
+
+dbExecute(con_merged, create_sql)
+
+```
+
+```{r}
+dbWriteTable(
+  con_merged,
+  "compound_add",
+  compound_add_df,
+  append = TRUE,
+  row.names = FALSE
+)
+
+```
+
+
+```{r}
+dbGetQuery(con_merged, "SELECT COUNT(*) FROM compound_add;")
+dbGetQuery(con_merged, "SELECT * FROM compound_add LIMIT 5;")
+```
+
+
+
