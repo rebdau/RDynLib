@@ -783,12 +783,6 @@ dbReadTable(con, "synonym")
 dbReadTable(con, "msms_spectrum")
 ```
 
-
-
-
-
-
-
 Get access to the MS spectra data.
 
 ```{r}
@@ -837,6 +831,91 @@ sid <- 4
 
 Only, at present we don't have a simple function to extract the experiment data
 - we would need to extract that using SQL queries.
+
+#add compound_add file to a sql table
+
+
+```{r}
+con <- dbConnect(RSQLite::SQLite(), "data/DyLib_FTMS_pos.sqlite")
+dbListTables(con)
+```
+
+
+```{r}
+compound_add_path <- "D:/equip_msdata/database_FTMS_pos/CSV_add/compound_add.txt"
+
+compound_add_df <- read.table(
+  compound_add_path,
+  header = TRUE,
+  sep = "\t",
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+
+names(compound_add_df)[names(compound_add_df) == "COMPID"] <- "compound_id"
+
+names(compound_add_df) <- make.unique(names(compound_add_df), sep = "_")
+
+```
+
+resolving duplicate names conflicts
+
+```{r}
+names(compound_add_df) <- sub("^HuN$", "HuN_mixed", names(compound_add_df))
+names(compound_add_df) <- sub("^HaN$", "HaN_mixed", names(compound_add_df))
+names(compound_add_df) <- sub("^GuN$", "GuN_mixed", names(compound_add_df))
+names(compound_add_df) <- sub("^GaN$", "GaN_mixed", names(compound_add_df))
+names(compound_add_df) <- sub("^SuN$", "SuN_mixed", names(compound_add_df))
+names(compound_add_df) <- sub("^SaN$", "SaN_mixed", names(compound_add_df))
+
+```
+
+
+```{r}
+cols_sql <- paste(
+  sprintf('"%s" REAL', setdiff(names(compound_add_df), "compound_id")),
+  collapse = ",\n  "
+)
+
+dbExecute(con, "DROP TABLE IF EXISTS compound_add;")
+
+create_sql <- sprintf("
+CREATE TABLE compound_add (
+  compound_id TEXT,
+  %s
+);
+", cols_sql)
+
+dbExecute(con, create_sql)
+
+```
+
+
+
+```{r}
+dbWriteTable(
+  con,
+  "compound_add",
+  compound_add_df,
+  append = TRUE,
+  row.names = FALSE
+)
+
+```
+
+
+
+
+
+```{r}
+
+dbGetQuery(con, "SELECT COUNT(*) FROM compound_add;")
+dbGetQuery(con, "SELECT * FROM compound_add LIMIT 5;")
+
+```
+
+
+
 
 # Session information
 
