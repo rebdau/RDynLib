@@ -1,15 +1,49 @@
-# direc refers to elution order of substrate and product. It is specific for
-# a certain conversion: 1, product elute earlier than substrate; 2, product
-# elute later than substrate; 3, product might elute earlier or later, but not
-# at the same time as the substrate.
-# Prod.exp refers to the considered experiment: EXPID
-# peakwidth is necessary to create a minimum retention time difference between
-# substrate and product.
-# min relates to the minimum intensity of the product ions.
-
+#' @title Identify conversion-specific precursor–product pairs and compute CSPP
+#'        similarity scores
+#'
+#' @description
+#' conv.CSPP_SQL() identifies candidate precursor–product compound pairs for a
+#' given conversion type based on mass differences and retention time constraints,
+#' and computes CSPP similarity scores by comparing their MS/MS spectra stored
+#' in a SQLite database.
+#'
+#' @details
+#' For each compound in the input data frame, a theoretical product mass is
+#' generated using the provided mass difference. Candidate product compounds are
+#' selected within a specified mass tolerance and filtered according to their
+#' relative elution order.
+#'
+#' @param inp.x `data.frame()` containing compound information for a single
+#'   experiment. Must include the columns \code{compound_id},
+#'   \code{mass_measured}, and \code{retention_time}.
+#'
+#' @param mzdiff `Numeric(1)` mass difference (in Da) corresponding to the
+#'   conversion under consideration.
+#'
+#' @param direc `Integer(1)` elution order constraint between substrate and
+#'   product compounds. See Details.
+#'
+#' @param peakwidth `Numeric(1)` minimum required retention time difference
+#'   between substrate and product compounds.
+#'
+#' @param mzerr `Numeric(1)` mass tolerance (in Da) used to match theoretical
+#'   and observed product masses. Default is \code{0.015}.
+#'
+#' @param data_con `DBIConnection` to an open SQLite database containing
+#'   MS/MS spectra and fragment peak information.
+#'
+#' @return
+#' A `data.frame()` containing CSPP similarity metrics for all valid
+#' precursor–product pairs identified for the given conversion. Each row
+#' corresponds to one candidate conversion and includes fragment ion and
+#' neutral loss similarity scores.
+#'
+#' @author Ahlam Mentag
+#'
+#' @export
 conv.CSPP_SQL <- function(inp.x, mzdiff, direc,
-                          peakwidth, mzerr, expid) {
-  
+                          peakwidth, mzerr = 0.015,
+                          data_con) {
   
   Prod.dat <- inp.x[order(inp.x$mass_measured), ]
   Sub.dat  <- Prod.dat
@@ -29,12 +63,6 @@ conv.CSPP_SQL <- function(inp.x, mzdiff, direc,
     REV_IONS     = numeric(),
     FORW_LOSS    = numeric(),
     REV_LOSS     = numeric(),
-    stringsAsFactors = FALSE
-  )
-  
-  tR.df <- data.frame(
-    tR.sub  = numeric(),
-    tR.prod = numeric(),
     stringsAsFactors = FALSE
   )
   
@@ -59,11 +87,11 @@ conv.CSPP_SQL <- function(inp.x, mzdiff, direc,
       
       if (Prod.dat$mass_measured[j] <= prd.high) {
         
-        out <- targMS2comp(
+        out <- targMS2comp_SQL(
           Sub.dat$compound_id[i],
           Prod.dat$compound_id[j],
-          subDB,
-          AnalMS
+          data_con,
+          IntThres
         )
         
         rt.sub  <- Sub.dat$retention_time[i]
@@ -76,7 +104,6 @@ conv.CSPP_SQL <- function(inp.x, mzdiff, direc,
                           rt.prod > rt.sub + peakwidth))
         ) {
           cspp.df <- rbind(cspp.df, out)
-          tR.df   <- rbind(tR.df, c(rt.sub, rt.prod))
         }
         
         j <- j + 1
@@ -92,4 +119,5 @@ conv.CSPP_SQL <- function(inp.x, mzdiff, direc,
   
   return(cspp.df)
 }
+
 
