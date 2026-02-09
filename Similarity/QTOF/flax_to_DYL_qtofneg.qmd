@@ -491,12 +491,12 @@ names(compound_add_df) <- make.unique(names(compound_add_df), sep = "_")
 resolving duplicate names conflicts
 
 ```{r}
-names(compound_add_df) <- sub("^CSPP_HuN$", "CSPP_HuN_mixed", names(compound_add_df))
-names(compound_add_df) <- sub("^CSPP_HaN$", "CSPP_HaN_mixed", names(compound_add_df))
-names(compound_add_df) <- sub("^CSPP_GuN$", "CSPP_GuN_mixed", names(compound_add_df))
-names(compound_add_df) <- sub("^CSPP_GaN$", "CSPP_GaN_mixed", names(compound_add_df))
-names(compound_add_df) <- sub("^CSPP_SuN$", "CSPP_SuN_mixed", names(compound_add_df))
-names(compound_add_df) <- sub("^CSPP_SaN$", "CSPP_SaN_mixed", names(compound_add_df))
+names(compound_add_df) <- sub("^CSPP_HuN$", "CSPP_HuN_C", names(compound_add_df))
+names(compound_add_df) <- sub("^CSPP_HaN$", "CSPP_HaN_C", names(compound_add_df))
+names(compound_add_df) <- sub("^CSPP_GuN$", "CSPP_GuN_C", names(compound_add_df))
+names(compound_add_df) <- sub("^CSPP_GaN$", "CSPP_GaN_C", names(compound_add_df))
+names(compound_add_df) <- sub("^CSPP_SuN$", "CSPP_SuN_C", names(compound_add_df))
+names(compound_add_df) <- sub("^CSPP_SaN$", "CSPP_SaN_C", names(compound_add_df))
 
 
 ```
