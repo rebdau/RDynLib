@@ -16,7 +16,7 @@ with different spectrum types.
 ```{r}
 pth <- getwd()
 setwd(pth)
-source("sql_to_mgf.R")
+source("C:/Users/ament/Desktop/Github/RDynLib/sql_to_mgf.R")
 ```
 
 #Test on flax ftms data
@@ -40,6 +40,36 @@ sql_to_mgf(
 )
 ```
 
+```{r}
+sql_to_mgf(
+  sqlite_path   = "C:/Users/ament/Desktop/Github/RDynLib/data/DYL_FLAX_FTMSneg.sqlite",
+  expid         = 266,
+  spectrum_type = "not_assembled",
+  msLevel = 3,
+  output_file   = "C:/Users/ament/Desktop/Github/RDynLib/data/flax_ftms_ms3.mgf"
+)
+```
+```{r}
+sql_to_mgf(
+  sqlite_path   = "C:/Users/ament/Desktop/Github/RDynLib/data/DYL_FLAX_FTMSneg.sqlite",
+  expid         = 266,
+  spectrum_type = "not_assembled",
+  msLevel = 2,
+  output_file   = "C:/Users/ament/Desktop/Github/RDynLib/data/flax_ftms_ms2.mgf"
+)
+```
+```{r}
+sql_to_mgf(
+  sqlite_path   = "C:/Users/ament/Desktop/Github/RDynLib/data/DYL_FLAX_FTMSneg.sqlite",
+  expid         = 266,
+  spectrum_type = "not_assembled",
+  msLevel = 4,
+  output_file   = "C:/Users/ament/Desktop/Github/RDynLib/data/flax_ftms_ms4.mgf"
+)
+```
+
+
+
 #Test on flax QTOF data
 #QTOF neg flax data with "intersect_single_energy" spectrum_type
 ```{r}
@@ -60,6 +90,14 @@ sql_to_mgf(
   expid         = 52,
   spectrum_type = "merged_MSMS_all_energies",
   output_file   = "C:/Users/ament/Desktop/Github/RDynLib/data/DYL_FLAX_QTOFneg.mgf"
+)
+```
+
+```{r}
+sql_to_mgf(
+  sqlite_path   = "D:/work/these/These/clones/RDynlib/RDynLib/data/DyLib_QTOF_neg.sqlite",
+  expid         = 1,
+  output_file   = "C:/Users/ament/Desktop/Github/RDynLib/data/DyLib_QTOF_neg_exp1.mgf"
 )
 ```
 
