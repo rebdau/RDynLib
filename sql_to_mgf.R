@@ -15,6 +15,9 @@
 #'       For Qtof flax data it could be "intersect_single_energy" 
 #'       or "merged_MSMS_all_energies".
 #'       
+#' @param msLevel 'numeric()' msLevel number of the data to convert to  
+#'        an mgf file.
+#'               
 #' @param output_file 'character()' the output directory of the final mgf file.
 #' 
 #' @return an mgf file with the data from the sqlite database.
