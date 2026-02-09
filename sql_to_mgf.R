@@ -28,14 +28,13 @@
 #' @export                
 sql_to_mgf <- function(sqlite_path,
                        expid,
+                       msLevel = NULL,
                        spectrum_type = NULL,
                        output_file) {
-
   
   # GNPS helper functions
   source("https://raw.githubusercontent.com/jorainer/xcms-gnps-tools/master/customFunctions.R")
   
-
   ## Load database as Spectra
   cdb <- CompDb(sqlite_path)
   
@@ -52,6 +51,10 @@ sql_to_mgf <- function(sqlite_path,
   ## Filtering
   sps <- sps[sps$expid %in% expid]
   
+  if (!is.null(msLevel)) {
+    sps <- sps[sps$msLevel %in% msLevel]
+  }
+  
   if (!is.null(spectrum_type)) {
     sps <- sps[sps$spectrum_type %in% spectrum_type]
   }
@@ -62,21 +65,39 @@ sql_to_mgf <- function(sqlite_path,
   # Restrict variables to GNPS relevant ones
   sps <- selectSpectraVariables(
     sps,
-    c("precursorMz", "rtime", "nodename",  "dataOrigin")
+    c(
+      "precursorMz",
+      "rtime",
+      "nodename",
+      "dataOrigin",
+      "msLevel",
+      "precScanNum"
+    )
   )
   
-
+  
   ## Map nodename to feature_id (GNPS requirement)
   sps$feature_id <- sps$nodename
   
-  # Drop nodename if not needed anymore
   sps <- selectSpectraVariables(
     sps,
-    c("precursorMz", "rtime", "feature_id",  "dataOrigin")
+    c(
+      "precursorMz",
+      "rtime",
+      "feature_id",
+      "dataOrigin",
+      "msLevel",
+      "precScanNum"
+    )
   )
   
-  ## Format spectra for GNPS 
+  
+  ## Format spectra for GNPS
   sps_gnps <- formatSpectraForGNPS(sps)
+  
+  sps_gnps$MSLEVEL     <- sps$msLevel
+  sps_gnps$PRECSANNUM <- sps$precScanNum
+  
   
   ## Export MGF using MsBackendMgf
   export(
@@ -87,6 +108,7 @@ sql_to_mgf <- function(sqlite_path,
   
   invisible(TRUE)
 }
+
 
 
 
