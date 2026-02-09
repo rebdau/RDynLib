@@ -68,7 +68,7 @@ sql_to_mgf <- function(sqlite_path,
   # Restrict variables to GNPS relevant ones
   sps <- selectSpectraVariables(
     sps,
-    c(
+    c( "compound_id",
       "precursorMz",
       "rtime",
       "nodename",
@@ -84,7 +84,7 @@ sql_to_mgf <- function(sqlite_path,
   
   sps <- selectSpectraVariables(
     sps,
-    c(
+    c( "compound_id",
       "precursorMz",
       "rtime",
       "feature_id",
@@ -98,8 +98,10 @@ sql_to_mgf <- function(sqlite_path,
   ## Format spectra for GNPS
   sps_gnps <- formatSpectraForGNPS(sps)
   
+  sps_gnps$COMPOUND_ID <- sps$compound_id
   sps_gnps$MSLEVEL     <- sps$msLevel
   sps_gnps$PRECSANNUM <- sps$precScanNum
+  sps_gnps$DATAORIGIN  <- sps$dataOrigin
   
   
   ## Export MGF using MsBackendMgf
