@@ -42,11 +42,6 @@
 #' @param thr3 average of the dot products obtained for the common product ions 
 #' and the common neutral losses, by default set on \code{0.4}.
 #' 
-#' @param gnps_add `Character(1)` string giving the path to the GNPS
-#'    configuration file. This file defines the conversion types, 
-#'    mass differences,elution order, and the target columns in 
-#'    \code{gnps_add}.
-#'
 #' @return
 #' Invisibly returns a data frame corresponding to the updated GNPS SQL table
 #' for the processed experiment.
@@ -56,7 +51,7 @@
 #' @export
 conv.GNPS_SQL <- function(sql_path, expid, peakwidth = NULL, mzerr = 0.015,
                           min = 5, adduct = 46.0055, thr1 = 3, thr2 = 0.1,
-                          thr3 = 0.4, gnps_add = "gnps.txt") {
+                          thr3 = 0.4) {
   
   if (is.null(peakwidth)) peakwidth <- 0.2
   
@@ -82,14 +77,6 @@ conv.GNPS_SQL <- function(sql_path, expid, peakwidth = NULL, mzerr = 0.015,
   
   ## Load GNPS SQL table
   gnps_sql <- dbGetQuery(con, "SELECT * FROM gnps_add")
-  
-  ## Load GNPS definition file (layout + ranking rules)
-  gnps_def <- read.table(
-    gnps_add,
-    header = TRUE,
-    sep = "\t",
-    stringsAsFactors = FALSE
-  )
   
   i <- 1
   while (i <= nrow(inp.x)) {
@@ -160,8 +147,7 @@ conv.GNPS_SQL <- function(sql_path, expid, peakwidth = NULL, mzerr = 0.015,
       gnps_sql <- rank.GNPS_SQL(
         gnps.df,
         gnps_sql,
-        inp.x,
-        gnps_def
+        inp.x
       )
     }
     
@@ -169,9 +155,7 @@ conv.GNPS_SQL <- function(sql_path, expid, peakwidth = NULL, mzerr = 0.015,
   }
   
   ## Align compound_id
-  gnps_sql$compound_id <- inp.x$compound_id[
-    seq_len(nrow(gnps_sql))
-  ]
+  gnps_sql$compound_id <- inp.x$compound_id[seq_len(nrow(gnps_sql))]
   
   ## Write back to SQL
   cols_to_update <- setdiff(colnames(gnps_sql), "compound_id")
@@ -179,9 +163,7 @@ conv.GNPS_SQL <- function(sql_path, expid, peakwidth = NULL, mzerr = 0.015,
   dbBegin(con)
   
   for (i in seq_len(nrow(gnps_sql))) {
-    
     cid <- gnps_sql$compound_id[i]
-    
     for (col in cols_to_update) {
       dbExecute(
         con,

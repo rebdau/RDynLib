@@ -19,12 +19,6 @@
 #'   product ions. Default it is configured for ftms data
 #'   \code{0.01}, for qtof data the user could set it to \code{0.015}.
 #'
-#' @param gnps_add `Character(1)` string giving the path to the GNPS
-#'    configuration file. This file defines the conversion types, 
-#'    mass differences,elution order, and the target columns in 
-#'    \code{gnps_add}.
-#'   
-#'
 #' @param peakwidth `Numeric(1)` half of the retention time window that is 
 #' defined for the CSPP ‘substrate’ feature allowing
 #' a minimum retention time difference with the CSPP ‘product’ feature,
@@ -54,8 +48,7 @@
 #' @export
 MultExp_GNPS_SQL <- function(sql_path, startexp, stopexp, peakwidth = NULL,
                              mzerr = 0.015, min = 5, adduct = NULL,
-                             thr1 = NULL, thr2 = NULL, thr3 = NULL,
-                             gnps_add = "gnps.txt") {
+                             thr1 = NULL, thr2 = NULL, thr3 = NULL) {
   
   if (is.null(peakwidth)) peakwidth <- 0.2
   if (is.null(adduct)) adduct <- 46.0055
@@ -77,7 +70,6 @@ MultExp_GNPS_SQL <- function(sql_path, startexp, stopexp, peakwidth = NULL,
       thr1      = thr1,
       thr2      = thr2,
       thr3      = thr3,
-      gnps_add  = gnps_add
     )
   }
   
