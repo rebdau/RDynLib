@@ -533,4 +533,71 @@ dbGetQuery(con_merged, "SELECT COUNT(*) FROM compound_add;")
 dbGetQuery(con_merged, "SELECT * FROM compound_add LIMIT 5;")
 
 ```
+#add gnps_add table
 
+```{r}
+con <- dbConnect(RSQLite::SQLite(), "data/DYL_FLAX_FTMSneg.sqlite")
+dbListTables(con)
+```
+
+
+```{r}
+gnps_add_path <- "D:/equip_msdata/database_FTMS_neg/CSV_add/gnps_add.txt"
+
+gnps_add_df <- read.table(
+  gnps_add_path,
+  header = TRUE,
+  sep = "\t",
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+
+names(gnps_add_df)[names(gnps_add_df) == "COMPID"] <- "compound_id"
+
+names(gnps_add_df) <- make.unique(names(gnps_add_df), sep = "_")
+
+```
+
+
+
+```{r}
+cols_sql <- paste(
+  sprintf('"%s" REAL', setdiff(names(gnps_add_df), "compound_id")),
+  collapse = ",\n  "
+)
+
+dbExecute(con, "DROP TABLE IF EXISTS gnps_add;")
+
+create_sql <- sprintf("
+CREATE TABLE gnps_add (
+  compound_id TEXT,
+  %s
+);
+", cols_sql)
+
+dbExecute(con, create_sql)
+```
+
+
+
+```{r}
+dbWriteTable(
+  con,
+  "gnps_add",
+  gnps_add_df,
+  append = TRUE,
+  row.names = FALSE
+)
+
+```
+
+
+
+
+
+```{r}
+
+dbGetQuery(con, "SELECT COUNT(*) FROM gnps_add;")
+dbGetQuery(con, "SELECT * FROM gnps_add LIMIT 5;")
+
+```
