@@ -2,7 +2,7 @@
 #'        table
 #'
 #' @description 
-#' cspp.tot_SQL() computes CSPP (Conversion-Specific Product Pair) scores for 
+#' MultExp_CSPP_SQL() computes CSPP (Conversion-Specific Product Pair) scores for 
 #' all compounds belonging to a set of experiments and updates the corresponding
 #' rows in the \code{compound_add} table of a SQLite database.
 #'
