@@ -21,17 +21,17 @@ MS3plot_SQL <- function(sql_path, dbkey, prcx = 0.7, wh = 1) {
   precursor   <- ms3$precursor_mz[wh]
   
   peaks <- dbGetQuery(con, sprintf(
-    "SELECT Mz, Intensity
-     FROM msms_spectrum_peak
-     WHERE Spectrum_id = %d
-     ORDER BY Mz",
+    "SELECT mz, intensity
+   FROM msms_spectrum_peak
+   WHERE spectrum_id = %d
+   ORDER BY mz",
     spectrum_id
   ))
   
-  if (nrow(peaks) == 0) return()
+  if (nrow(peaks) == 0 || any(is.na(peaks$mz))) return()
   
-  prod_ion <- peaks$Mz
-  intens   <- peaks$Intensity
+  prod_ion <- peaks$mz
+  intens   <- peaks$intensity
   
   par(cex = prcx)
   

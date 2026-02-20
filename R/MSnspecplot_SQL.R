@@ -14,9 +14,9 @@ MSnspecplot_SQL <- function(sql_path,
   on.exit(dbDisconnect(con), add = TRUE)
   
   
-  # CSPP relationships
+  # CSPP relationships              
   cspp.res <- cspp.display_SQL(
-    sql_path = sql_path,
+    sql_path = sql_path,                             
     dbkey = dbkey,
     nr_col = nr_col
   )

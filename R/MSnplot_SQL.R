@@ -22,7 +22,7 @@ MSnplot_SQL <- function(sql_path, dbkey, prcx = 0.6) {
   oldpar <- par(no.readonly = TRUE)
   on.exit(par(oldpar), add = TRUE)
   
-  par(mfrow = c(row.nr, col.nr))
+  
   
   MS2plot_SQL(sql_path, dbkey, prcx)
   
