@@ -19,6 +19,11 @@
 #' the specified number of sequential connections (`nr_of_seq`) are included 
 #' in the displayed CSPP and GNPS local networks.
 #' 
+#' @param min 'numeric(1)' minimum absolute intensity of product ions for CID 
+#' matching. Default 5 for QTOF or HCD MS/MS; for ion trap CID (e.g., LTQ or
+#' LTQ-Orbitrap), higher threshold (e.g., 100) is recommended due to low-mass
+#' cutoff and limited dynamic range.
+#' 
 #' @param nr_of_seq 'number(1)' size of local network, i.e., number of 
 #' subsequent edges starting from the node representing the selected COMPID.
 #' 
@@ -38,9 +43,9 @@
 #' @author Ahlam Mentag
 #' 
 #' @export
-Overall.net_SQL <- function(sql_path, exp.id, dbkey, nr_of_seq = 2, thr1 = 1,
-                            thr2 = 0.9, thr3 = 0.4) {
-  
+Overall.net_SQL <- function(sql_path, exp.id, dbkey, min = 5 , nr_of_seq = 2, 
+                            thr1 = 1, thr2 = 0.9, thr3 = 0.4) {
+                            
   oldpar <- par(no.readonly = TRUE)
   on.exit({
     try(par(oldpar), silent = TRUE)
@@ -52,6 +57,7 @@ Overall.net_SQL <- function(sql_path, exp.id, dbkey, nr_of_seq = 2, thr1 = 1,
   net.lst1 <- net.addit_SQL(sql_path = sql_path,
                             exp.id = exp.id,
                             nettype = "CSPP",
+                            min = min,
                             thr1 = thr1,
                             thr2 = thr2,
                             thr3 = thr3)
@@ -66,6 +72,7 @@ Overall.net_SQL <- function(sql_path, exp.id, dbkey, nr_of_seq = 2, thr1 = 1,
   net.lst2 <- net.addit_SQL(sql_path = sql_path,
                             exp.id = exp.id,
                             nettype = "GNPS",
+                            min = min,
                             thr1 = thr1,
                             thr2 = thr2,
                             thr3 = thr3)
