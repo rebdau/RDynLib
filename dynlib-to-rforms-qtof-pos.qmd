@@ -704,12 +704,6 @@ dbReadTable(con, "synonym")
 dbReadTable(con, "msms_spectrum_peak")
 ```
 
-
-
-
-
-
-
 Get access to the MS spectra data.
 
 ```{r}
@@ -726,10 +720,149 @@ spectraData(s, columns = c("msLevel", "compound_id", "nodename", "rtime", "reten
 ```
 
 
+#add compound_add file to a sql table
 
+```{r}
+con_merged <- dbConnect(SQLite(), "data/DyLib_QTOF_pos.sqlite")
+
+compound_add_path <- "D:/equip_msdata/database_QTOF_pos/CSV_add/compound_add.txt"
+
+compound_add_df <- read.table(
+  compound_add_path,
+  header = TRUE,
+  sep = "\t",
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+
+names(compound_add_df)[names(compound_add_df) == "COMPID"] <- "compound_id"
+
+names(compound_add_df) <- make.unique(names(compound_add_df), sep = "_")
+
+```
+
+resolving duplicate names conflicts
+
+```{r}
+names(compound_add_df) <- sub("^CSPP_HuN$", "CSPP_HuN_C", names(compound_add_df))
+names(compound_add_df) <- sub("^CSPP_HaN$", "CSPP_HaN_C", names(compound_add_df))
+names(compound_add_df) <- sub("^CSPP_GuN$", "CSPP_GuN_C", names(compound_add_df))
+names(compound_add_df) <- sub("^CSPP_GaN$", "CSPP_GaN_C", names(compound_add_df))
+names(compound_add_df) <- sub("^CSPP_SuN$", "CSPP_SuN_C", names(compound_add_df))
+names(compound_add_df) <- sub("^CSPP_SaN$", "CSPP_SaN_C", names(compound_add_df))
+
+
+```
+
+
+```{r}
+cols_sql <- paste(
+  sprintf('"%s" REAL', setdiff(names(compound_add_df), "compound_id")),
+  collapse = ",\n  "
+)
+
+dbExecute(con_merged, "DROP TABLE IF EXISTS compound_add;")
+
+create_sql <- sprintf("
+CREATE TABLE compound_add (
+  compound_id TEXT,
+  %s
+);
+", cols_sql)
+
+dbExecute(con_merged, create_sql)
+
+```
+
+```{r}
+dbWriteTable(
+  con_merged,
+  "compound_add",
+  compound_add_df,
+  append = TRUE,
+  row.names = FALSE
+)
+
+```
+
+
+```{r}
+dbGetQuery(con_merged, "SELECT COUNT(*) FROM compound_add;")
+dbGetQuery(con_merged, "SELECT * FROM compound_add LIMIT 5;")
+```
 
 Only, at present we don't have a simple function to extract the experiment data
 - we would need to extract that using SQL queries.
+
+
+#add gnps_add table
+
+```{r}
+con <- dbConnect(RSQLite::SQLite(), "data/DyLib_QTOF_pos.sqlite")
+dbListTables(con)
+```
+
+
+```{r}
+gnps_add_path <- "D:/equip_msdata/database_QTOF_pos/CSV_add/gnps_add.txt"
+
+gnps_add_df <- read.table(
+  gnps_add_path,
+  header = TRUE,
+  sep = "\t",
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+
+names(gnps_add_df)[names(gnps_add_df) == "COMPID"] <- "compound_id"
+
+names(gnps_add_df) <- make.unique(names(gnps_add_df), sep = "_")
+
+```
+
+
+
+```{r}
+cols_sql <- paste(
+  sprintf('"%s" REAL', setdiff(names(gnps_add_df), "compound_id")),
+  collapse = ",\n  "
+)
+
+dbExecute(con, "DROP TABLE IF EXISTS gnps_add;")
+
+create_sql <- sprintf("
+CREATE TABLE gnps_add (
+  compound_id TEXT,
+  %s
+);
+", cols_sql)
+
+dbExecute(con, create_sql)
+```
+
+
+
+```{r}
+dbWriteTable(
+  con,
+  "gnps_add",
+  gnps_add_df,
+  append = TRUE,
+  row.names = FALSE
+)
+
+```
+
+
+
+
+
+```{r}
+
+dbGetQuery(con, "SELECT COUNT(*) FROM gnps_add;")
+dbGetQuery(con, "SELECT * FROM gnps_add LIMIT 5;")
+
+```
 
 # Session information
 

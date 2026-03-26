@@ -1,9 +1,56 @@
+#' @title Match FT and QTOF MS2 spectra based on local alignments 
+#'
+#' @description
+#' `matchFTSyn_SQL()` filters locally aligned FTMS–QTOF candidate pairs in
+#' (`LCal`) by comparing MS2 peak lists stored in SQL databases.
+#'
+#' @details
+#' The function:
+#' - Loads FT and QTOF MS2 spectra from SQLite via DBI
+#' - Applies polarity and spectrum-type filtering
+#' - Computes MS2 peak overlap for each FT–QTOF candidate pair
+#' - Removes pairs with less matched peaks based on a threshold
+#'
+#' @param LCal 
+#' `data.frame` A data.frame returned by `Aligning_General_SQL()` function.
+#' 
+#' @param FT_con `character(1)` A DBI connection object 
+#' to the FTMS SQLite database (the reference database).
+#' 
+#' @param QTOF_con `character(1)` A DBI connection object to the QTOF
+#' SQLite database.
+#' 
+#' @param polarity_ft `numeric(1)` Integer (0 or 1), refers to the polarity 
+#' of the ftms  experiment to align.
+#' 
+#' @param polarity_qtof `numeric(1)`Integer (0 or 1), refers to the polarity 
+#' of the qtof experiment to align.
+#' 
+#' @param minPeaks `Numeric(1)` Minimum MS2 matching ratio required.
+#' 
+#' @param aggregated_Ft `logical(1)` Use aggregated FTMS spectra.
+#' 
+#' @param aggregated_QTOF `logical(1)` Use aggregated QTOFMS spectra.
+#'
+#' @return A filtered version of `LCal`, keeping only MS2 supported matches.
+#'
+#' @importFrom DBI dbConnect
+#'
+#' @importFrom DBI dbDisconnect
+#'
+#' @importFrom RSQLite SQLite
+#' 
+#' @importFrom DBI dbGetQuery
+#' 
+#' @importMethodsFrom DBI dbListFields
+#' 
+#' @author Ahlam Mentag
+#'
+#' @export
 matchFTSyn_SQL <- function(LCal, FT_con, QTOF_con, polarity_ft = 0, 
-                           polarity_qtof = 0,minIon = 0.6, 
+                           polarity_qtof = 0,minPeaks = 0.6, 
                            aggregated_Ft = FALSE, aggregated_QTOF = FALSE) {
   
-  library(DBI)
-  library(RSQLite)
   
   # Load FT and QTOF compound tables
   subdb_ft  <- dbGetQuery(FT_con,
@@ -116,7 +163,7 @@ matchFTSyn_SQL <- function(LCal, FT_con, QTOF_con, polarity_ft = 0,
     # Compute matching peak ratio
     same_ion <- sum(ms2ion %in% msmsion)
     
-    if (same_ion / length(ms2ion) < minIon) {
+    if (same_ion / length(ms2ion) < minPeaks) {
       LCal <- LCal[-i, ]
       next
     }

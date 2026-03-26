@@ -51,9 +51,12 @@
 #' @param rng `numeric(1)` used in `RemoveOutliers()` refers to the number of
 #'        standard  deviations used to define the outlier cutoff.
 #'
-#' @param minIon `numeric(1)` Minimum number of matched peaks required to
-#'        consider a valid match. Matches with fewer than `minIon` shared
-#'        ions are discarded.
+#' @param minIon `numeric(1)`  
+#'    The minimum matching ions between spectra of peak pairs, which are found
+#'    after applying the regression model, and which are the final matching 
+#'    written in the Assoc table. (default `0.01`).
+#'
+#' @param minPeaks Numeric. Minimum MS2 matching ratio required.
 #'
 #' @param startpoint `numeric(1)` used in `RegressionPie_LCalign()` refers to
 #'        the minimum retention time for the first knot in piecewise regression.
@@ -93,18 +96,18 @@
 Aligning_FT_QTOF_SQL <- function(
     FT_path, QTOF_path, FT_expnr, QTOF_expnr,
     Assoc = NULL, err = 0.02, t.ini = 5,
-    lc.err = 1, rng = 2, minIon = 0.6, startpoint = 1,
+    lc.err = 1, rng = 2, minIon = 0.01, minPeaks = 0.6, startpoint = 1,
     save_assoc = FALSE, aggregated_Ft = FALSE, aggregated_QTOF = FALSE
 ) {
-
+  
   if (is.character(Assoc)) {
-
+    
     assoc_file <- Assoc
-
+    
     if (file.exists(Assoc)) {
-        Assoc_df <- read.table(Assoc, header = TRUE, sep = "\t")
+      Assoc_df <- read.table(Assoc, header = TRUE, sep = "\t")
     } else {
-        warning("File ", assoc_file, " not found. Proceeding without.")
+      warning("File ", assoc_file, " not found. Proceeding without.")
       Assoc_df <- data.frame(
         ref_compid = integer(0),
         target_compid = integer(0),
@@ -113,14 +116,14 @@ Aligning_FT_QTOF_SQL <- function(
         stringsAsFactors = FALSE
       )
     }
-
+    
   } else if (is.data.frame(Assoc)) {
-
+    
     Assoc_df <- Assoc
     assoc_file <- NULL
-
+    
   } else {
-
+    
     Assoc_df <- data.frame(
       ref_compid = integer(0),
       target_compid = integer(0),
@@ -130,50 +133,63 @@ Aligning_FT_QTOF_SQL <- function(
     )
     assoc_file <- NULL
   }
-
-
+  
+  
   FT_con   <- dbConnect(SQLite(), FT_path)
   QTOF_con <- dbConnect(SQLite(), QTOF_path)
   on.exit(dbDisconnect(FT_con))
   on.exit(dbDisconnect(QTOF_con))
-
-  #Detect polarity
+  
+  # Detect polarity
   ft_mode  <- dbGetQuery(FT_con, sprintf("SELECT mode FROM experiment WHERE expid = %d", FT_expnr))$mode
   qtof_mode <- dbGetQuery(QTOF_con, sprintf("SELECT mode FROM experiment WHERE expid = %d", QTOF_expnr))$mode
-
+  
   if (!length(ft_mode))
-    stop("Experiment '", FT_expnr,"' not found in the database '", FT_path, "'")
+    stop("Experiment '", FT_expnr,"' not found in ", FT_path)
   if (!length(qtof_mode))
-    stop("Experiment '", QTOF_expnr,"' not found in the database '", QTOF_path, "'")
-
-  polarity_ft  <- ifelse(ft_mode == "neg", 0, 1)
-  polarity_qtof <- ifelse(qtof_mode == "neg", 0, 1)
-
-  #Generate LCal and remove outliers
-  LCal <- Aligning_General_SQL(FT_con, QTOF_con, FT_expnr, QTOF_expnr, err,
-                               t.ini)
-  LCal <- matchFTSyn_SQL(LCal, FT_con, QTOF_con, minIon = minIon,
-                         polarity_ft = polarity_ft, polarity_qtof = polarity_qtof,
-                         aggregated_Ft = aggregated_Ft,
-                         aggregated_QTOF = aggregated_QTOF)
+    stop("Experiment '", QTOF_expnr,"' not found in ", QTOF_path)
+  
+  ft_mode  <- tolower(ft_mode)
+  qtof_mode <- tolower(qtof_mode)
+  
+  negative_values <- c("neg", "negative", "-", "negativ")
+  
+  polarity_ft  <- ifelse(ft_mode %in% negative_values, 0, 1)
+  polarity_qtof <- ifelse(qtof_mode %in% negative_values, 0, 1)
+  
+  # Local LCal
+  LCal <- Aligning_General_SQL(FT_con, QTOF_con, FT_expnr, QTOF_expnr, err, t.ini)
+  
+  LCal <- matchFTSyn_SQL(
+    LCal, FT_con, QTOF_con, minPeaks = minPeaks,
+    polarity_ft = polarity_ft, polarity_qtof = polarity_qtof,
+    aggregated_Ft = aggregated_Ft, aggregated_QTOF = aggregated_QTOF
+  )
+  
   LCal <- RemoveOutliers(LCal, rng)
-
-  #Regression
+  
+  # Regression
   rg <- RegressionPie_LCalign_SQL(LCal, startpoint)
-  PlotPie_LCalign(LCal, rg)
-  #Fill Assoc
+
+  if (interactive() && capabilities("cairo")) {
+    try(PlotPie_LCalign(LCal, rg), silent = TRUE)
+  }
+  
+  # Fill assoc table
   Assoc_df <- FillAssocFTnQTOFn_SQL(
-    FT_con = FT_con, QTOF_con = QTOF_con, Assoc = Assoc_df, FT_expnr = FT_expnr, QTOF_expnr = QTOF_expnr,
+    FT_con = FT_con, QTOF_con = QTOF_con, Assoc = Assoc_df,
+    FT_expnr = FT_expnr, QTOF_expnr = QTOF_expnr,
     cutoff = 1, rg = rg, lc.err = lc.err, err = err, minIon = minIon,
     polarity_ft = polarity_ft, polarity_qtof = polarity_qtof,
     FT_path = FT_path, QTOF_path = QTOF_path,
-    aggregated_Ft = aggregated_Ft,
-    aggregated_QTOF = aggregated_QTOF)
-
-  #Save updated Assoc if requested
+    aggregated_Ft = aggregated_Ft, aggregated_QTOF = aggregated_QTOF
+  )
+  
+  # Save assoc if requested
   if (save_assoc && !is.null(assoc_file)) {
-    write.table(Assoc_df, file = assoc_file, sep = "\t", row.names = FALSE, quote = FALSE)
+    write.table(Assoc_df, file = assoc_file, sep = "\t",
+                row.names = FALSE, quote = FALSE)
   }
-
+  
   return(Assoc_df)
 }

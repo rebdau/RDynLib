@@ -22,21 +22,57 @@
 # the conversion type allows to determine the column (indicated by conv.col) of
 # comp_app (and finally of compound_add.txt) to which the results need to be written. 
 
-rank.cspp<-function(cspp.df,conv.col,comp_add){
-	ave.cnt<-(cspp.df[,12]+cspp.df[,14])/2
-	ave.dot<-(cspp.df[,8]+cspp.df[,10])/2
-	cspp.df<-data.frame(cbind(cspp.df,ave.cnt,ave.dot))
-	cspp.df<-cspp.df[order(-cspp.df[,6],-cspp.df[,15],-cspp.df[,16]),]
-	while(dim(cspp.df)[1]!=0){
-	 compid.sub<-cspp.df[1,1]
-	 compid.prod<-cspp.df[1,4]
-	 cspp.name<-paste("!!",cspp.df[1,6],"!",
-				cspp.df[1,15],"!",cspp.df[1,16],
-				"!!",compid.prod,sep="")
-	 comp_add[compid.sub,conv.col]<-cspp.name
-	 res.prod<-which(cspp.df[,4]%in%compid.prod)
-	 res.sub<-which(cspp.df[,1]%in%compid.sub)
-	 cspp.df<-cspp.df[-sort(union(res.sub,res.prod)),]
-	}
-	return(comp_add)
+rank.cspp <- function(cspp.df, conv.col, comp_add) {
+  
+  if (nrow(cspp.df) == 0) return(comp_add)
+  
+  ave.cnt <- (cspp.df[,12] + cspp.df[,14]) / 2
+  ave.dot <- (cspp.df[,8]  + cspp.df[,10]) / 2
+  
+  cspp.df <- data.frame(cbind(cspp.df, ave.cnt, ave.dot))
+  
+  cspp.df <- cspp.df[order(-cspp.df[,6],
+                           -cspp.df[,15],
+                           -cspp.df[,16]), ]
+  
+  while (nrow(cspp.df) != 0) {
+    
+    compid.sub  <- cspp.df[1,1]
+    compid.prod <- cspp.df[1,4]
+    
+    cspp.name <- paste("!!", cspp.df[1,6], "!",
+                       cspp.df[1,15], "!",
+                       cspp.df[1,16],
+                       "!!", compid.prod, sep="")
+    
+    # CHECK IF compound_id EXISTS
+    
+    row_index <- which(comp_add$compound_id == compid.sub)
+    
+    if (length(row_index) == 0) {
+      
+      # Create empty row
+      new_row <- as.list(rep(NA, ncol(comp_add)))
+      names(new_row) <- colnames(comp_add)
+      
+      new_row$compound_id <- compid.sub
+      
+      comp_add <- rbind(comp_add, new_row)
+      
+      row_index <- nrow(comp_add)
+    }
+    
+    # UPDATE CONVERSION COLUMN
+    
+    comp_add[row_index, conv.col] <- cspp.name
+    
+    # Remove used compounds from ranking pool
+    
+    res.prod <- which(cspp.df[,4] == compid.prod)
+    res.sub  <- which(cspp.df[,1] == compid.sub)
+    
+    cspp.df <- cspp.df[-sort(unique(c(res.sub, res.prod))), ]
+  }
+  
+  return(comp_add)
 }

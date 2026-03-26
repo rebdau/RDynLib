@@ -1,15 +1,47 @@
-#Regression between FT and Synapt chromatograms obtained for the same
-#sample. Deviations from a straight curve might occur as different LC
-#systems are involved. Therefore, a piecewise regression is performed
-#including at most two knots. A hyperbolic curve was noted when
-#aligning a Thermo Accela chromatogram with a Waters UPLC chromatogram.
-#By looking at the result from multiple experiments, robust regression
-#was more accurate than traditional least squares. The 'startpoint'
-#allows to decide on the FT retention time from which regression
-#should be started. 
-
+#' @title Piecewise Robust Regression Between FTMS and QTOF Retention Times
+#'
+#' @description
+#' 
+#' `RegressionPie_LCalign_SQL()` performs piecewise regression between FTMS and
+#' Synapt QTOF retention times obtained after local alignment (`LCal`).  
+#' 
+#' Because chromatograms may come from different LC systems, deviations from 
+#' linearity are common. Therefore the function evaluates:
+#' - a model without knots (simple linear regression),
+#' - piecewise linear models with one knot,
+#' - piecewise linear models with two knots.  
+#' 
+#' For each model, the adjusted R^2 is computed, and the best model is selected.
+#' The selected model is then refitted using robust regression (`rlm`) to reduce
+#' sensitivity to outliers.  
+#'
+#' The `startpoint` parameter specifies the minimum FT retention time from which
+#' knot positions can be considered, and iterates only over the unique retention 
+#' times actually present in LCal.
+#'
+#' @param LCal A matrix or data frame representing local alignment results, 
+#'        where column 2 contains FTMS retention times and column 4 contains 
+#'        QTOF retention times.
+#' @param startpoint Numeric. Minimum FTMS retention time at which knots may be 
+#'        placed. Defaults to 1.
+#'
+#' @return A numeric vector containing six regression parameters:  
+#'  
+#'    - `exp.intercept`: intercept of the robust regression,
+#'    - `exp.slope`: main slope before first knot,
+#'    - `k1_best`: first knot position (0 if no knot),
+#'    - `exp.t1`: slope adjustment after first knot,
+#'    - `k2_best`: second knot position (0 if not used),
+#'    - `exp.t2`: slope adjustment after second knot.
+#'   
+#'
+#' @author Ahlam Mentag
+#'
+#' @import MASS
+#'
+#' @export
 RegressionPie_LCalign_SQL <- function(LCal, startpoint = 1) {
-
+  
   x <- as.numeric(LCal[, 2])  # FT retention times
   y <- as.numeric(LCal[, 4])  # Synapt retention times
   
@@ -29,7 +61,7 @@ RegressionPie_LCalign_SQL <- function(LCal, startpoint = 1) {
   knottime2 <- c(knottime2, 0)
   VarExp <- c(VarExp, summary(out)$adj.r.squared)
   
-
+  
   unique_x <- sort(unique(x[x >= startpoint]))
   
   # One-knot models
@@ -68,7 +100,7 @@ RegressionPie_LCalign_SQL <- function(LCal, startpoint = 1) {
   
   t1 <- ifelse(x > k1_best, x - k1_best, 0)
   t2 <- ifelse(x > k2_best, x - k2_best, 0)
-
+  
   library(MASS)
   
   if (k1_best == 0 && k2_best == 0) {

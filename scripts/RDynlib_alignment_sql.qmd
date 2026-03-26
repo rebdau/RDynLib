@@ -62,7 +62,8 @@ By default, 60% of the MS2 peaks should be traced in the MS/MS spectrum as the M
 ### Input
 
 ```{r}
-LCal_sql <- matchFTSyn_SQL(align_SQL, FT_con, QTOF_con, minIon = 0.6)
+library(DBI)
+LCal_sql <- matchFTSyn_SQL(align_SQL, FT_con, QTOF_con, minPeaks = 0.6)
 head(LCal_sql)
 nrow(LCal_sql)
 ```
@@ -114,9 +115,9 @@ The `Aligning_FT_QTOF()` function is the wrapper function that manages the full 
 ```{r}
 FT_con <- dbConnect(SQLite(), FT_path)
 QTOF_con <- dbConnect(SQLite(), QTOF_path)
-fill <- FillAssocFTnQTOFn_SQL(FT_con, QTOF_con, assoc_path, FT_expnr, QTOF_expnr,
-                                       cutoff = 1, rg_sql, lc.err = 1, err, minIon = 0.6,
-                                       polarity_ft = 0, polarity_qtof = 0)
+fill <- FillAssocFTnQTOFn_SQL(FT_con, QTOF_con,  FT_expnr =  191,
+  QTOF_expnr = 38, cutoff = 1, rg = rg_sql, lc.err = 1, err  = 0.02,  minIon = 0.6 ,  FT_path = FT_path, QTOF_path = QTOF_path, polarity_ft = 0,    polarity_qtof = 0,Assoc = NULL)
+nrow(fill)
 ```
 
 
@@ -134,6 +135,8 @@ Assoc_SQL <-Aligning_FT_QTOF_SQL(
   QTOF_path = QTOF_path,
   FT_expnr = 191,
   QTOF_expnr = 38,
+  minPeaks = 0.6,
+  minIon = 0.6,
   Assoc = assoc_path,
   startpoint = 1,
   save_assoc = FALSE
