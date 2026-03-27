@@ -22,7 +22,7 @@ Remov_empties<-function(err,syn.exp,ft.sh,reg){
 		#if QTOF row has higher m/z than FT selected m/z, remove
 		#FT selected m/z row, break searching the QTOF DynLib
 		#and go to the next FT m/z value (for which i remains 1)
-	   ft.sh<-data.frame(ft.sh[-i,]) 
+	   ft.sh<-data.frame(ft.sh[-i,], check.names = FALSE) 
 	   rownames(ft.sh)=1:(dim(ft.sh)[1])
 	   if (j>1) j=j-1
 	   break
